@@ -50,10 +50,18 @@
         <a href="/admin">Admin</a>
         <a href="/admin/bookings">Bookings</a>
         <a href="/admin/shipment-update">Shipment Update</a>
-        <a href="/logout">Logout</a>
+        <a href="/logout">Admin Logout</a>
+
+    {% elif session.get("user_logged_in") %}
+        <hr>
+        <a href="#">Hello, {{ session.get("user_name") }}</a>
+        <a href="/user-logout">Logout</a>
+
     {% else %}
         <hr>
-        <a href="/login">Login</a>
+        <a href="/signup">Sign Up</a>
+        <a href="/user-login">Login</a>
+        <a href="/login">Admin Login</a>
     {% endif %}
 </div>
 
