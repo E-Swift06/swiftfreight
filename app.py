@@ -1617,7 +1617,11 @@ def my_shipments():
     shipments = c.fetchall()
     conn.close()
 
-    return render_template("my_shipments.html", shipments=shipments)
+    return render_template(
+        "my_shipments.html",
+        shipments=shipments,
+        title=read_text_file("settings.txt", "SWIFTFREIGHT")
+    )
 
 if __name__ == "__main__":
     import os
