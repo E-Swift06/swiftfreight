@@ -6,18 +6,37 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <nav class="navbar">
+<nav class="top-nav">
+    <div class="nav-left">
+        <strong>SWIFTFREIGHT</strong>
+    </div>
+
+    <div class="nav-right">
+        <div class="hamburger" onclick="toggleMenu()">
+            ☰
+        </div>
+    </div>
+</nav>
+
+<!-- SIDE MENU -->
+<div id="sideMenu" class="side-menu">
+    <span class="close-btn" onclick="toggleMenu()">×</span>
+
     <a href="/">Home</a>
     <a href="/booking">Book Shipment</a>
     <a href="/track">Track</a>
 
     {% if session.get("logged_in") %}
+        <hr>
         <a href="/admin">Admin</a>
         <a href="/admin/bookings">Bookings</a>
         <a href="/admin/shipment-update">Shipment Update</a>
         <a href="/logout">Logout</a>
+    {% else %}
+        <hr>
+        <a href="/login">Login</a>
     {% endif %}
-</nav>
+</div>
     <div class="container">
         <h2>Admin: Update Shipment Status</h2>
 
@@ -45,5 +64,16 @@
             <button type="submit">Update Status</button>
         </form>
     </div>
+    <script>
+function toggleMenu() {
+    let menu = document.getElementById("sideMenu");
+
+    if (menu.style.right === "0px") {
+        menu.style.right = "-260px";
+    } else {
+        menu.style.right = "0px";
+    }
+}
+</script>
 </body>
 </html>

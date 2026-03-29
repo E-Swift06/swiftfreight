@@ -1037,3 +1037,55 @@ left: 8px;
 min-width: 0;
 }
 }
+/* TOP NAV */
+.top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    background: #d40511;
+    color: white;
+}
+
+.hamburger {
+    font-size: 26px;
+    cursor: pointer;
+}
+
+/* SIDE MENU */
+.side-menu {
+    position: fixed;
+    top: 0;
+    right: -260px;
+    width: 260px;
+    height: 100%;
+    background: #111;
+    color: white;
+    padding: 20px;
+    transition: 0.3s;
+    z-index: 9999;
+}
+
+.side-menu a {
+    display: block;
+    color: white;
+    padding: 12px 0;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.side-menu a:hover {
+    color: #ffcc00;
+}
+
+.side-menu hr {
+    border: 0.5px solid #333;
+    margin: 15px 0;
+}
+
+.close-btn {
+    font-size: 28px;
+    cursor: pointer;
+    display: block;
+    text-align: right;
+}

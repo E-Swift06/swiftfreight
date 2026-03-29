@@ -19,13 +19,37 @@
     </div>
 </header>
 
-<nav class="navbar">
-    <a href="/">Home</a>
-    <a href="/admin">Admin</a>
-    <a href="/admin/bookings">Bookings</a>
-    <a href="/admin/shipment-update">Shipment Update</a>
-    <a href="/logout">Logout</a>
+<nav class="top-nav">
+    <div class="nav-left">
+        <strong>SWIFTFREIGHT</strong>
+    </div>
+
+    <div class="nav-right">
+        <div class="hamburger" onclick="toggleMenu()">
+            ☰
+        </div>
+    </div>
 </nav>
+
+<!-- SIDE MENU -->
+<div id="sideMenu" class="side-menu">
+    <span class="close-btn" onclick="toggleMenu()">×</span>
+
+    <a href="/">Home</a>
+    <a href="/booking">Book Shipment</a>
+    <a href="/track">Track</a>
+
+    {% if session.get("logged_in") %}
+        <hr>
+        <a href="/admin">Admin</a>
+        <a href="/admin/bookings">Bookings</a>
+        <a href="/admin/shipment-update">Shipment Update</a>
+        <a href="/logout">Logout</a>
+    {% else %}
+        <hr>
+        <a href="/login">Login</a>
+    {% endif %}
+</div>
 
 <section class="booking-hero">
     <div class="booking-hero-overlay">
@@ -154,5 +178,16 @@
     <p style="font-size:14px; opacity:0.7;">Powered by SwiftFreight Logistics</p>
 </footer>
 
+<script>
+function toggleMenu() {
+    let menu = document.getElementById("sideMenu");
+
+    if (menu.style.right === "0px") {
+        menu.style.right = "-260px";
+    } else {
+        menu.style.right = "0px";
+    }
+}
+</script>
 </body>
 </html>
