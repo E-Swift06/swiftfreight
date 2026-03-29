@@ -29,6 +29,13 @@
     <a href="/">Home</a>
     <a href="/booking">Book Shipment</a>
     <a href="/track">Track</a>
+
+    {% if session.get("logged_in") %}
+        <a href="/admin">Admin</a>
+        <a href="/admin/bookings">Bookings</a>
+        <a href="/admin/shipment-update">Update Shipment</a>
+        <a href="/logout">Logout</a>
+    {% endif %}
 </nav>
 
 <section class="hero" {% if banner %}style="background-image: url('{{ url_for('static', filename='uploads/' + banner) }}');"{% endif %}>
