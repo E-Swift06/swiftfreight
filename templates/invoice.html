@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Commercial Invoice</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 30px;
+            color: #222;
+        }
+
+        .doc-wrap {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 40px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            border-radius: 12px;
+        }
+
+        .doc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 3px solid #d40511;
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+            gap: 20px;
+        }
+
+        .doc-header h1 {
+            margin: 0;
+            font-size: 30px;
+        }
+
+        .doc-header p {
+            margin: 4px 0;
+            color: #555;
+        }
+
+        .section-title {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #d40511;
+            margin: 24px 0 12px;
+            font-weight: bold;
+        }
+
+        .box {
+            background: #fafafa;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .box p {
+            margin: 6px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #e5e5e5;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background: #fafafa;
+        }
+
+        .print-btn {
+            display: inline-block;
+            margin-top: 25px;
+            background: #d40511;
+            color: white;
+            text-decoration: none;
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .doc-wrap {
+                box-shadow: none;
+                border-radius: 0;
+                max-width: 100%;
+                padding: 0;
+            }
+
+            .print-btn {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="doc-wrap">
+        <div class="doc-header">
+            <div>
+                <h1>Commercial Invoice</h1>
+                <p><strong>{{ company_name }}</strong></p>
+                <p>{{ company_location }}</p>
+                <p>{{ company_phone }}</p>
+                <p>{{ company_email }}</p>
+            </div>
+
+            <div>
+                <p><strong>Invoice No:</strong> INV-{{ booking.tracking_number }}</p>
+                <p><strong>Date:</strong> {{ booking.updated_at if booking.updated_at else "Not available" }}</p>
+                <p><strong>Tracking No:</strong> {{ booking.tracking_number }}</p>
+            </div>
+        </div>
+
+        <div class="section-title">Sender / Shipper</div>
+        <div class="box">
+            <p><strong>Name:</strong> {{ booking.sender_name }}</p>
+            <p><strong>Phone:</strong> {{ booking.sender_phone }}</p>
+        </div>
+
+        <div class="section-title">Recipient / Consignee</div>
+        <div class="box">
+            <p><strong>Name:</strong> {{ booking.recipient_name }}</p>
+            <p><strong>Phone:</strong> {{ booking.recipient_phone }}</p>
+            <p><strong>Address:</strong> {{ booking.address }}</p>
+        </div>
+
+        <div class="section-title">Shipment Details</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Service Type</th>
+                    <th>Weight</th>
+                    <th>Dimensions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>General Cargo / Shipment</td>
+                    <td>{{ booking.service_type }}</td>
+                    <td>{{ booking.weight }} kg</td>
+                    <td>{{ booking.dimensions }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="section-title">Shipment Status</div>
+        <div class="box">
+            <p><strong>Status:</strong> {{ booking.status }}</p>
+            <p><strong>Current Location:</strong> {{ booking.current_location }}</p>
+        </div>
+
+        <a href="#" onclick="window.print()" class="print-btn">Print / Save as PDF</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bookings List</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+<header class="top-header">
+    <div class="header-inner">
+        <div class="logo-wrap"></div>
+
+        <div class="title-wrap">
+            <h1>BOOKINGS LIST</h1>
+        </div>
+
+        <div class="header-space"></div>
+    </div>
+</header>
+
+<nav class="navbar">
+    <a href="/">Home</a>
+    <a href="/admin">Admin</a>
+    <a href="/admin/bookings">Bookings</a>
+    <a href="/admin/shipment-update">Shipment Update</a>
+    <a href="/logout">Logout</a>
+</nav>
+
+<section class="booking-hero">
+    <div class="booking-hero-overlay">
+        <div class="booking-hero-content">
+            <span class="section-tag">ADMIN CONTROL</span>
+            <h2>All Shipments</h2>
+            <p>View and manage all shipment bookings from one place.</p>
+        </div>
+    </div>
+</section>
+
+<section class="booking-section">
+    <div class="booking-card">
+        <div class="booking-card-top-line"></div>
+
+        <!-- FILTER -->
+        <form method="GET" class="booking-form filter-bar">
+            <div class="form-grid">
+
+                <div class="form-group">
+                    <label>Search</label>
+                    <input type="text" name="search" placeholder="Tracking / Name" value="{{ search }}">
+                </div>
+
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status">
+                        <option value="">All Status</option>
+                        <option value="Shipment Created" {% if status=="Shipment Created" %}selected{% endif %}>Shipment Created</option>
+                        <option value="Picked Up" {% if status=="Picked Up" %}selected{% endif %}>Picked Up</option>
+                        <option value="At Sorting Hub" {% if status=="At Sorting Hub" %}selected{% endif %}>At Sorting Hub</option>
+                        <option value="In Transit" {% if status=="In Transit" %}selected{% endif %}>In Transit</option>
+                        <option value="Arrived at Destination Hub" {% if status=="Arrived at Destination Hub" %}selected{% endif %}>Arrived at Destination Hub</option>
+                        <option value="Out for Delivery" {% if status=="Out for Delivery" %}selected{% endif %}>Out for Delivery</option>
+                        <option value="Delivered" {% if status=="Delivered" %}selected{% endif %}>Delivered</option>
+                    </select>
+                </div>
+
+                <div class="form-group form-group-full filter-btn">
+                    <button type="submit" class="btn">Apply Filter</button>
+                </div>
+
+            </div>
+        </form>
+
+        {% if bookings %}
+            <div class="bookings-table-wrap">
+                <table class="bookings-table">
+                    <thead>
+                        <tr>
+                            <th>Tracking No.</th>
+                            <th>Sender</th>
+                            <th>Recipient</th>
+                            <th>Service</th>
+                            <th>Status</th>
+                            <th>Location</th>
+                            <th>Updated</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for booking in bookings %}
+                            <tr>
+
+                                <td><strong>{{ booking[1] }}</strong></td>
+                                <td>{{ booking[2] }}</td>
+                                <td>{{ booking[3] }}</td>
+                                <td>{{ booking[4] }}</td>
+
+                                <!-- STATUS COLOR -->
+                                <td>
+                                    {% set current_status = booking[5] if booking[5] else "Shipment Created" %}
+                                    <span class="
+                                        table-status
+                                        {% if current_status == 'Delivered' %}
+                                            status-delivered
+                                        {% elif current_status in ['Picked Up', 'At Sorting Hub', 'In Transit', 'Arrived at Destination Hub', 'Out for Delivery'] %}
+                                            status-transit
+                                        {% else %}
+                                            status-created
+                                        {% endif %}
+                                    ">
+                                        {{ current_status }}
+                                    </span>
+                                </td>
+
+                                <td>{{ booking[6] if booking[6] else "Pending Pickup" }}</td>
+                                <td>{{ booking[7] if booking[7] else "-" }}</td>
+
+                                <!-- ACTION BUTTONS -->
+                                <td>
+    <div class="action-group">
+        <a href="/admin/shipment-update?tracking_number={{ booking[1] }}" class="small-action-btn action-update">
+            Update
+        </a>
+        <a href="/invoice-pdf/{{ booking[1] }}" class="small-action-btn action-pdf">
+            PDF
+        </a>
+        <a href="/awb-pdf/{{ booking[1] }}" class="small-action-btn action-awbpdf">
+            AWB PDF
+        </a>
+        <a href="/invoice/{{ booking[1] }}" class="small-action-btn action-invoice" target="_blank">
+            Invoice
+        </a>
+        <a href="/awb/{{ booking[1] }}" class="small-action-btn action-awb" target="_blank">
+            AWB
+        </a>
+    </div>
+</td>
+
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        {% else %}
+            <div class="shipment-info-card">
+                <h4>No bookings found</h4>
+                <p>Try adjusting your search or filter.</p>
+            </div>
+        {% endif %}
+
+    </div>
+</section>
+
+<footer class="footer">
+    <p>© 2026 SwiftFreight. All rights reserved.</p>
+    <p style="font-size:14px; opacity:0.7;">Powered by SwiftFreight Logistics</p>
+</footer>
+
+</body>
+</html>

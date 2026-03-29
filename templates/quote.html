@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+<header>GET SHIPPING QUOTE</header>
+
+<nav>
+    <a href="/">Home</a>
+</nav>
+
+<div class="container">
+<form method="POST">
+    Weight (kg):
+    <input type="number" name="weight" required><br>
+
+    Shipping Type:
+    <select name="type">
+        <option value="air">Air Freight</option>
+        <option value="sea">Sea Freight</option>
+    </select><br>
+
+    <button type="submit">Calculate</button>
+</form>
+
+{% if price %}
+<p>Estimated Price: ${{ price }}</p>
+{% endif %}
+</div>

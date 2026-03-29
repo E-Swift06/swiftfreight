@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+<header class="top-header">
+    <div class="header-inner">
+        <div class="logo-wrap">
+            {% if logo %}
+            <img src="{{ url_for('static', filename='uploads/' + logo) }}" class="logo" alt="Company Logo">
+            {% endif %}
+        </div>
+
+        <div class="title-wrap">
+            <h1>{{ title if title else 'SWIFTFREIGHT' }}</h1>
+        </div>
+
+        <div class="header-space"></div>
+    </div>
+</header>
+
+<nav class="navbar">
+    <a href="/">Home</a>
+    <a href="/booking">Book Shipment</a>
+    <a href="/track">Track</a>
+    <a href="/login">Admin</a>
+</nav>
+
+<section class="booking-hero">
+    <div class="booking-hero-overlay">
+        <div class="booking-hero-content">
+            <span class="section-tag">SHIPMENT STATUS</span>
+            <h2>Tracking Result</h2>
+            <p>Here are the latest available details for your shipment.</p>
+        </div>
+    </div>
+</section>
+
+<section class="booking-section">
+    <div class="booking-card">
+        <div class="booking-card-top-line"></div>
+
+        <div class="tracking-result-card">
+            <div class="status-badge">{{ booking.status }}</div>
+
+            <div class="tracking-number-box">
+                <h3>Tracking Number</h3>
+                <p>{{ booking.tracking_number }}</p>
+            </div>
+
+            {% set steps = [
+                "Shipment Created",
+                "Picked Up",
+                "At Sorting Hub",
+                "In Transit",
+                "Arrived at Destination Hub",
+                "Out for Delivery",
+                "Delivered"
+            ] %}
+
+            {% set current_step = steps.index(booking.status) if booking.status in steps else 0 %}
+
+            <div class="timeline-section">
+                <h3 class="timeline-title">Shipment Progress</h3>
+
+                <div class="timeline">
+                    {% for step in steps %}
+                        {% set step_index = loop.index0 %}
+                        <div class="timeline-step
+                            {% if step_index < current_step %}completed{% endif %}
+                            {% if step_index == current_step %}active{% endif %}
+                        ">
+                            <div class="timeline-circle">
+                                {% if step_index < current_step %}
+                                    <i class="fas fa-check"></i>
+                                {% else %}
+                                    {{ loop.index }}
+                                {% endif %}
+                            </div>
+                            <div class="timeline-label">{{ step }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="result-grid">
+                <div class="result-item result-item-full">
+                    <h4>Current Location</h4>
+                    <p>{{ booking.current_location if booking.current_location else "Awaiting update" }}</p>
+                </div>
+
+                <div class="result-item result-item-full">
+                    <h4>Last Updated</h4>
+                    <p>{{ booking.updated_at if booking.updated_at else "Not available yet" }}</p>
+                </div>
+            </div>
+
+           <div class="tracking-log-section">
+    <h3 class="timeline-title">Tracking History</h3>
+
+    {% if logs %}
+        <div class="dhl-timeline">
+            {% for log in logs %}
+                <div class="dhl-timeline-item">
+                    <div class="dhl-timeline-marker {% if loop.first %}active{% else %}done{% endif %}">
+                        {% if loop.first %}
+                            <span class="dhl-ping"></span>
+                        {% endif %}
+                    </div>
+
+                    <div class="dhl-timeline-card">
+                        <div class="dhl-timeline-status">{{ log[0] }}</div>
+                        <div class="dhl-timeline-location">{{ log[1] }}</div>
+                        <div class="dhl-timeline-time">{{ log[2] }}</div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No tracking history yet.</p>
+    {% endif %}
+</div>
+            <div class="result-grid">
+                <div class="result-item">
+                    <h4>Sender Name</h4>
+                    <p>{{ booking.sender_name }}</p>
+                </div>
+
+                <div class="result-item">
+                    <h4>Sender Phone</h4>
+                    <p>{{ booking.sender_phone }}</p>
+                </div>
+
+                <div class="result-item">
+                    <h4>Recipient Name</h4>
+                    <p>{{ booking.recipient_name }}</p>
+                </div>
+
+                <div class="result-item">
+                    <h4>Recipient Phone</h4>
+                    <p>{{ booking.recipient_phone }}</p>
+                </div>
+
+                <div class="result-item result-item-full">
+                    <h4>Delivery Address</h4>
+                    <p>{{ booking.address }}</p>
+                </div>
+
+                <div class="result-item">
+                    <h4>Weight</h4>
+                    <p>{{ booking.weight }} kg</p>
+                </div>
+
+                <div class="result-item">
+                    <h4>Dimensions</h4>
+                    <p>{{ booking.dimensions }}</p>
+                </div>
+
+                <div class="result-item result-item-full">
+                    <h4>Service Type</h4>
+                    <p>{{ booking.service_type }}</p>
+                </div>
+            </div>
+
+            <div class="booking-submit">
+                <a href="/track" class="btn">Track Another Shipment</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="contact-minimal">
+    <div class="contact-minimal-inner">
+        <div class="contact-box">
+            <div class="contact-icon"><i class="fas fa-phone"></i></div>
+            <h4>Call</h4>
+            <p>{{ phone if phone else '+60 12-345 6789' }}</p>
+        </div>
+
+        <div class="contact-box">
+            <div class="contact-icon"><i class="fas fa-envelope"></i></div>
+            <h4>Email</h4>
+            <p>{{ email if email else 'support@swiftfreight.com' }}</p>
+        </div>
+
+        <div class="contact-box">
+            <div class="contact-icon"><i class="fas fa-location-dot"></i></div>
+            <h4>Location</h4>
+            <p>{{ location if location else 'Kuala Lumpur, Malaysia' }}</p>
+        </div>
+    </div>
+</section>
+
+<footer class="footer">
+    <p>© 2026 {{ title if title else 'SWIFTFREIGHT' }}. All rights reserved.</p>
+    <p style="font-size:14px; opacity:0.7;">Powered by SwiftFreight Logistics</p>
+</footer>
+
+<a href="https://wa.me/{{ whatsapp if whatsapp else '60123456789' }}?text=Hello%20SwiftFreight,%20I%20want%20to%20ask%20about%20shipping." class="whatsapp-btn" target="_blank">
+    💬
+</a>
+
+</body>
+</html>

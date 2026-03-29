@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Update Status</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav>
+        <div><strong>My Shipping</strong></div>
+        <div>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('booking') }}">Book</a>
+            <a href="{{ url_for('track') }}">Track</a>
+            <a href="{{ url_for('admin') }}">Admin</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2>Admin: Update Shipment Status</h2>
+
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <ul>
+              {% for message in messages %}
+                <li>{{ message }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <input type="text" name="tracking_number" placeholder="Enter Tracking Number" required>
+
+            <select name="new_status" required>
+                <option value="">Select New Status</option>
+                <option value="Booking Received">Booking Received</option>
+                <option value="In Transit">In Transit</option>
+                <option value="Out for Delivery">Out for Delivery</option>
+                <option value="Delivered">Delivered</option>
+            </select>
+
+            <button type="submit">Update Status</button>
+        </form>
+    </div>
+</body>
+</html>

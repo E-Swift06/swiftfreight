@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+<header class="top-header">
+    <div class="header-inner">
+        <div class="logo-wrap">
+            {% if logo %}
+            <img src="{{ url_for('static', filename='uploads/' + logo) }}" class="logo" alt="Company Logo">
+            {% endif %}
+        </div>
+
+        <div class="title-wrap">
+            <h1>{{ title }}</h1>
+        </div>
+
+        <div class="header-space"></div>
+    </div>
+</header>
+
+<nav class="navbar">
+    <a href="/">Home</a>
+    <a href="/booking">Book Shipment</a>
+    <a href="/track">Track</a>
+    <a href="/admin">Admin</a>
+    <a href="/admin/shipment-update">Update Shipment</a>
+</nav>
+
+<section class="hero" {% if banner %}style="background-image: url('{{ url_for('static', filename='uploads/' + banner) }}');"{% endif %}>
+    <div class="hero-overlay">
+        <div class="hero-content">
+            <h2>{{ hero_title }}</h2>
+            <p>{{ hero_text }}</p>
+
+            <form action="/track" method="POST" class="track-box">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <input type="text" name="tracking_number" placeholder="Enter your tracking number">
+    <button type="submit">Track</button>
+</form>
+
+            <div class="hero-buttons">
+                <a href="/booking" class="btn">Book Shipment</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="services premium-section">
+    <div class="section-header">
+        <span class="section-tag">WHAT WE OFFER</span>
+        <h2>Our Services</h2>
+        <p>Reliable logistics solutions tailored for personal and business shipping needs.</p>
+    </div>
+
+    <div class="service-grid">
+        <div class="premium-card">
+            <div class="card-top-line"></div>
+            <div class="card-icon">✈️</div>
+            <h3>Air Freight</h3>
+            <p>Fast international delivery for urgent shipments with dependable transit support.</p>
+        </div>
+
+        <div class="premium-card">
+            <div class="card-top-line"></div>
+            <div class="card-icon">🚢</div>
+            <h3>Sea Freight</h3>
+            <p>Cost-effective solutions for heavier cargo, container loads and long-distance transport.</p>
+        </div>
+
+        <div class="premium-card">
+            <div class="card-top-line"></div>
+            <div class="card-icon">🚚</div>
+            <h3>Door-to-Door Delivery</h3>
+            <p>Convenient pickup and delivery from sender to recipient for a smoother experience.</p>
+        </div>
+    </div>
+</section>
+
+<section class="why-us premium-section">
+    <div class="section-header">
+        <span class="section-tag">WHY SWIFTFREIGHT</span>
+        <h2>Why Choose Us</h2>
+        <p>Built for simplicity, speed, and trust from booking to final delivery.</p>
+    </div>
+
+    <div class="service-grid">
+        <div class="premium-card">
+            <div class="card-top-line"></div>
+            <div class="card-icon">📍</div>
+            <h3>Real Tracking</h3>
+            <p>Track shipment progress anytime with your tracking number and shipment details.</p>
+        </div>
+
+        <div class="premium-card">
+            <div class="card-top-line"></div>
+            <div class="card-icon">📝</div>
+            <h3>Easy Booking</h3>
+            <p>Simple booking form for local and international deliveries with less hassle.</p>
+        </div>
+
+        <div class="premium-card">
+            <div class="card-top-line"></div>
+            <div class="card-icon">✅</div>
+            <h3>Trusted Service</h3>
+            <p>Reliable shipping experience with secure handling, support and dependable updates.</p>
+        </div>
+    </div>
+</section>
+<section class="contact-minimal">
+    <div class="contact-minimal-inner">
+        <div class="contact-box">
+            <div class="contact-icon"><i class="fas fa-phone"></i></div>
+            <h4>Call</h4>
+            <p>{{ phone }}</p>
+        </div>
+
+        <div class="contact-box">
+            <div class="contact-icon"><i class="fas fa-envelope"></i></div>
+            <h4>Email</h4>
+            <p>{{ email }}</p>
+        </div>
+
+        <div class="contact-box">
+            <div class="contact-icon"><i class="fas fa-location-dot"></i></div>
+            <h4>Location</h4>
+            <p>{{ location }}</p>
+        </div>
+    </div>
+</section>
+<footer class="footer">
+    <p>© 2026 {{ title }}. All rights reserved.</p>
+    <p style="font-size:14px; opacity:0.7;">Powered by SwiftFreight Logistics</p>
+</footer>
+
+<a href="https://wa.me/{{ whatsapp }}?text=Hello%20SwiftFreight,%20I%20want%20to%20ask%20about%20shipping." class="whatsapp-btn" target="_blank">
+    💬
+</a>
+</body>
+</html>

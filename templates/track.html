@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Track Shipment - {{ title }}</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+<header class="top-header">
+    <div class="header-inner">
+        <div class="logo-wrap">
+            {% if logo %}
+            <img src="{{ url_for('static', filename='uploads/' + logo) }}" class="logo" alt="Company Logo">
+            {% endif %}
+        </div>
+
+        <div class="title-wrap">
+            <h1>{{ title if title else 'SWIFTFREIGHT' }}</h1>
+        </div>
+
+        <div class="header-space"></div>
+    </div>
+</header>
+
+<nav class="navbar">
+    <a href="/">Home</a>
+    <a href="/booking">Book Shipment</a>
+    <a href="/track">Track</a>
+    <a href="/admin">Admin</a>
+    <a href="/admin/shipment-update">Update Shipment</a>
+</nav>
+
+<section class="booking-hero">
+    <div class="booking-hero-overlay">
+        <div class="booking-hero-content">
+            <span class="section-tag">TRACK YOUR PARCEL</span>
+            <h2>Track Shipment</h2>
+            <p>Enter your tracking number to view shipment status and details.</p>
+        </div>
+    </div>
+</section>
+
+<section class="booking-section">
+    <div class="booking-card">
+        <div class="booking-card-top-line"></div>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flash-message">
+                    {% for message in messages %}
+                        <p>{{ message }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" class="booking-form tracking-form-single">
+            <!-- ✅ CSRF TOKEN -->
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="form-group form-group-full">
+                <label>Tracking Number</label>
+                <input type="text" name="tracking_number" placeholder="e.g. DHL-1234567890" required>
+            </div>
+
+            <div class="booking-submit">
+                <button type="submit" class="btn">Track Shipment</button>
+            </div>
+        </form>
+
+    </div>
+</section>
+
+<section class="contact-minimal">
+    <div class="contact-minimal-inner">
+        <div class="contact-box">
+            <h4>Call</h4>
+            <p>{{ phone if phone else '+60 12-345 6789' }}</p>
+        </div>
+
+        <div class="contact-box">
+            <h4>Email</h4>
+            <p>{{ email if email else 'support@swiftfreight.com' }}</p>
+        </div>
+
+        <div class="contact-box">
+            <h4>Location</h4>
+            <p>{{ location if location else 'Kuala Lumpur, Malaysia' }}</p>
+        </div>
+    </div>
+</section>
+
+<footer class="footer">
+    <p>© 2026 {{ title if title else 'SWIFTFREIGHT' }}. All rights reserved.</p>
+    <p style="font-size:14px; opacity:0.7;">Powered by SwiftFreight Logistics</p>
+</footer>
+
+<a href="https://wa.me/{{ whatsapp if whatsapp else '60123456789' }}?text=Hello%20SwiftFreight,%20I%20want%20to%20ask%20about%20shipping." class="whatsapp-btn" target="_blank">
+    💬
+</a>
+
+</body>
+</html>

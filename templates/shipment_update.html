@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Shipment Update</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+<header class="top-header">
+    <div class="header-inner">
+        <div class="logo-wrap"></div>
+
+        <div class="title-wrap">
+            <h1>SHIPMENT UPDATE</h1>
+        </div>
+
+        <div class="header-space"></div>
+    </div>
+</header>
+
+<nav class="navbar">
+    <a href="/">Home</a>
+    <a href="/admin">Admin</a>
+    <a href="/admin/bookings">Bookings</a>
+    <a href="/admin/shipment-update">Shipment Update</a>
+    <a href="/logout">Logout</a>
+</nav>
+
+<section class="booking-hero">
+    <div class="booking-hero-overlay">
+        <div class="booking-hero-content">
+            <span class="section-tag">TRACKING CONTROL</span>
+            <h2>Update Shipment Movement</h2>
+            <p>Search a tracking number, then update its latest status and location.</p>
+        </div>
+    </div>
+</section>
+
+<section class="booking-section">
+    <div class="booking-card">
+        <div class="booking-card-top-line"></div>
+
+        {% if message %}
+            <div class="flash-message">
+                <p>{{ message }}</p>
+            </div>
+        {% endif %}
+
+        <div class="shipment-update-grid">
+
+            <div class="shipment-left-panel">
+                <h3 class="timeline-title">Find Shipment</h3>
+
+                <form method="POST" class="booking-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="search">
+
+                    <div class="form-group form-group-full">
+                        <label>Tracking Number</label>
+                        <input type="text" name="tracking_number" placeholder="Enter tracking number" value="{{ tracking_number_value }}" required>
+                    </div>
+
+                    <div class="booking-submit left-align-submit">
+                        <button type="submit" class="btn">Search Shipment</button>
+                    </div>
+                </form>
+
+                {% if shipment %}
+                    <hr class="shipment-divider">
+
+                    <h3 class="timeline-title">Update Shipment</h3>
+
+                    <form method="POST" class="booking-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="update">
+                        <input type="hidden" name="tracking_number" value="{{ shipment[1] }}">
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Tracking Number</label>
+                                <input type="text" value="{{ shipment[1] }}" disabled>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Last Updated</label>
+                                <input type="text" value="{{ shipment[4] if shipment[4] else 'Not updated yet' }}" disabled>
+                            </div>
+
+                            <div class="form-group form-group-full">
+                                <label>Status</label>
+                                <select name="status" required>
+                                    <option value="Shipment Created" {% if shipment[2] == "Shipment Created" %}selected{% endif %}>Shipment Created</option>
+                                    <option value="Picked Up" {% if shipment[2] == "Picked Up" %}selected{% endif %}>Picked Up</option>
+                                    <option value="At Sorting Hub" {% if shipment[2] == "At Sorting Hub" %}selected{% endif %}>At Sorting Hub</option>
+                                    <option value="In Transit" {% if shipment[2] == "In Transit" %}selected{% endif %}>In Transit</option>
+                                    <option value="Arrived at Destination Hub" {% if shipment[2] == "Arrived at Destination Hub" %}selected{% endif %}>Arrived at Destination Hub</option>
+                                    <option value="Out for Delivery" {% if shipment[2] == "Out for Delivery" %}selected{% endif %}>Out for Delivery</option>
+                                    <option value="Delivered" {% if shipment[2] == "Delivered" %}selected{% endif %}>Delivered</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group form-group-full">
+                                <label>Current Location</label>
+                                <input type="text" name="current_location" value="{{ shipment[3] }}" required>
+                            </div>
+                        </div>
+
+                        <div class="booking-submit left-align-submit">
+                            <button type="submit" class="btn">Save Update</button>
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+
+            <div class="shipment-right-panel">
+                <h3 class="timeline-title">Quick Guide</h3>
+
+                <div class="shipment-info-card">
+                    <h4>Recommended Flow</h4>
+                    <ul class="shipment-guide-list">
+                        <li>Shipment Created</li>
+                        <li>Picked Up</li>
+                        <li>At Sorting Hub</li>
+                        <li>In Transit</li>
+                        <li>Arrived at Destination Hub</li>
+                        <li>Out for Delivery</li>
+                        <li>Delivered</li>
+                    </ul>
+                </div>
+
+                {% if shipment %}
+                    <div class="shipment-info-card">
+                        <h4>Current Shipment</h4>
+                        <p><strong>Tracking:</strong> {{ shipment[1] }}</p>
+                        <p><strong>Status:</strong> {{ shipment[2] }}</p>
+                        <p><strong>Location:</strong> {{ shipment[3] }}</p>
+                        <p><strong>Updated:</strong> {{ shipment[4] if shipment[4] else 'Not updated yet' }}</p>
+                    </div>
+                {% else %}
+                    <div class="shipment-info-card">
+                        <h4>No Shipment Selected</h4>
+                        <p>Search for a tracking number to load shipment details here.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<footer class="footer">
+    <p>© 2026 SwiftFreight. All rights reserved.</p>
+    <p style="font-size:14px; opacity:0.7;">Powered by SwiftFreight Logistics</p>
+</footer>
+
+</body>
+</html>
