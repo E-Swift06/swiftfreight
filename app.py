@@ -1,15 +1,20 @@
 from flask_wtf.csrf import CSRFProtect, generate_csrf
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 import sqlite3
 import random
 import string
 import os
+import io
+import qrcode
+
 from reportlab.graphics.barcode import code128
 from reportlab.lib.units import mm
-from reportlab.platypus import Image
-import qrcode
+from reportlab.platypus import Image, SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
 
 app = Flask(__name__)
 
@@ -65,6 +70,11 @@ def upgrade_db():
 
     try:
         c.execute("ALTER TABLE bookings ADD COLUMN updated_at TEXT DEFAULT ''")
+    except:
+        pass
+
+    try:
+        c.execute("ALTER TABLE bookings ADD COLUMN email TEXT")
     except:
         pass
 
@@ -133,23 +143,43 @@ def add_tracking_log(tracking_number, status, location):
     conn.close()
 
 
-def save_booking(sender_name, sender_phone, recipient_name, recipient_phone, address, weight, dimensions, service_type, tracking_number):
+def save_booking(sender_name, sender_phone, recipient_name, recipient_phone, address, weight, dimensions, service_type, tracking_number, user_email=None):
     conn = sqlite3.connect("shipping.db")
     c = conn.cursor()
+
     c.execute("""
         INSERT INTO bookings (
-            sender_name, sender_phone, recipient_name, recipient_phone,
-            address, weight, dimensions, service_type, tracking_number,
-            status, current_location, updated_at
+            sender_name,
+            sender_phone,
+            recipient_name,
+            recipient_phone,
+            address,
+            weight,
+            dimensions,
+            service_type,
+            tracking_number,
+            status,
+            current_location,
+            updated_at,
+            email
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
-        sender_name, sender_phone, recipient_name, recipient_phone,
-        address, weight, dimensions, service_type, tracking_number,
+        sender_name,
+        sender_phone,
+        recipient_name,
+        recipient_phone,
+        address,
+        weight,
+        dimensions,
+        service_type,
+        tracking_number,
         "Shipment Created",
         "Pending Pickup",
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        user_email
     ))
+
     conn.commit()
     conn.close()
 
@@ -321,6 +351,7 @@ def booking():
         logo = None
 
     if request.method == "POST":
+        user_email = session.get("user_email")
         sender_name = request.form.get("sender_name", "").strip()
         sender_phone = request.form.get("sender_phone", "").strip()
         recipient_name = request.form.get("recipient_name", "").strip()
@@ -1117,14 +1148,6 @@ def awb(tracking_number):
 # ------------------------------
 # INVOICE PDF DOWNLOAD
 # ------------------------------
-from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-)
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
-from flask import send_file
-import io
 
 @app.route("/invoice-pdf/<tracking_number>")
 def invoice_pdf(tracking_number):
@@ -1573,6 +1596,28 @@ def user_logout():
     session.pop("user_name", None)
     session.pop("user_email", None)
     return redirect(url_for("home"))
+
+@app.route("/my-shipments")
+def my_shipments():
+    if not session.get("user_logged_in"):
+        return redirect(url_for("user_login"))
+
+    user_email = session.get("user_email")
+
+    conn = sqlite3.connect("shipping.db")
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT tracking_number, sender_name, recipient_name, status, updated_at
+        FROM bookings
+        WHERE email = ?
+        ORDER BY id DESC
+    """, (user_email,))
+
+    shipments = c.fetchall()
+    conn.close()
+
+    return render_template("my_shipments.html", shipments=shipments)
 
 if __name__ == "__main__":
     import os

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Shipments</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<nav class="top-nav">
+    <div class="nav-left"></div>
+    <div class="nav-right">
+        <div class="hamburger" onclick="toggleMenu()">☰</div>
+    </div>
+</nav>
+
+<div id="sideMenu" class="side-menu">
+    <span class="close-btn" onclick="toggleMenu()">×</span>
+
+    <a href="/">Home</a>
+    <a href="/booking">Book Shipment</a>
+    <a href="/track">Track</a>
+
+    {% if session.get("user_logged_in") %}
+        <hr>
+        <a href="#">Hello, {{ session.get("user_name") }}</a>
+        <a href="/my-shipments">My Shipments</a>
+        <a href="/user-logout">Logout</a>
+    {% endif %}
+</div>
+
+<section class="booking-hero">
+    <div class="booking-hero-overlay">
+        <div class="booking-hero-content">
+            <span class="section-tag">YOUR DASHBOARD</span>
+            <h2>My Shipments</h2>
+            <p>View and track all your shipments in one place.</p>
+        </div>
+    </div>
+</section>
+
+<section class="booking-section">
+    <div class="booking-card">
+        <div class="booking-card-top-line"></div>
+
+        {% if shipments %}
+            <table class="bookings-table">
+                <tr>
+                    <th>Tracking</th>
+                    <th>Sender</th>
+                    <th>Recipient</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+
+                {% for s in shipments %}
+                <tr>
+                    <td>{{ s[0] }}</td>
+                    <td>{{ s[1] }}</td>
+                    <td>{{ s[2] }}</td>
+                    <td>
+                        <span class="table-status status-created">
+                            {{ s[3] }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="/track" class="small-action-btn action-pdf">
+                            Track
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <p>No shipments found.</p>
+        {% endif %}
+    </div>
+</section>
+
+<script>
+function toggleMenu() {
+    let menu = document.getElementById("sideMenu");
+    menu.style.right = (menu.style.right === "0px") ? "-320px" : "0px";
+}
+</script>
+
+</body>
+</html>

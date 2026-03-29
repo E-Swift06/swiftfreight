@@ -51,12 +51,14 @@
         <a href="/admin/shipment-update">Shipment Update</a>
         <a href="/logout">Admin Logout</a>
 
-    {% elif session.get("user_logged_in") %}
-        <hr>
-        <div style="padding: 10px 0; font-weight: bold; color:#ffcc00;">
-    👤 {{ session.get("user_name") }}
-</div>
-        <a href="/user-logout">Logout</a>
+{% elif session.get("user_logged_in") %}
+    <hr>
+    <div style="padding: 10px 0; font-weight: bold;">
+        👤 {{ session.get("user_name") }}
+    </div>
+
+    <a href="/my-shipments">My Shipments</a>
+    <a href="/user-logout">Logout</a>
 
     {% else %}
         <hr>
