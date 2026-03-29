@@ -86,6 +86,15 @@ def upgrade_db():
         )
     """)
 
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            full_name TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL
+        )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -170,6 +179,7 @@ def write_text_file(filename, value):
 # Initialize database
 init_db()
 upgrade_db()
+
 create_default_admin()
 
 
@@ -1488,6 +1498,81 @@ Weight: {booking[5]} kg
         download_name=f"awb_{tracking_number}.pdf",
         mimetype="application/pdf"
     )
+
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    error = ""
+
+    if request.method == "POST":
+        full_name = request.form.get("full_name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "").strip()
+
+        if not full_name or not email or not password:
+            error = "All fields are required."
+        else:
+            conn = sqlite3.connect("shipping.db")
+            c = conn.cursor()
+
+            c.execute("SELECT id FROM users WHERE email = ?", (email,))
+            existing_user = c.fetchone()
+
+            if existing_user:
+                error = "Email already registered."
+            else:
+                password_hash = generate_password_hash(password)
+                c.execute("""
+                    INSERT INTO users (full_name, email, password_hash)
+                    VALUES (?, ?, ?)
+                """, (full_name, email, password_hash))
+                conn.commit()
+                conn.close()
+
+                flash("Account created successfully. Please log in.")
+                return redirect(url_for("user_login"))
+
+            conn.close()
+
+    return render_template("signup.html", error=error)
+
+
+@app.route("/user-login", methods=["GET", "POST"])
+def user_login():
+    error = ""
+
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "").strip()
+
+        conn = sqlite3.connect("shipping.db")
+        c = conn.cursor()
+        c.execute("""
+            SELECT id, full_name, password_hash
+            FROM users
+            WHERE email = ?
+        """, (email,))
+        user = c.fetchone()
+        conn.close()
+
+        if user and check_password_hash(user[2], password):
+            session["user_logged_in"] = True
+            session["user_id"] = user[0]
+            session["user_name"] = user[1]
+            session["user_email"] = email
+            return redirect(url_for("home"))
+        else:
+            error = "Invalid login details."
+
+    return render_template("user_login.html", error=error)
+
+
+@app.route("/user-logout")
+def user_logout():
+    session.pop("user_logged_in", None)
+    session.pop("user_id", None)
+    session.pop("user_name", None)
+    session.pop("user_email", None)
+    return redirect(url_for("home"))
 
 if __name__ == "__main__":
     import os

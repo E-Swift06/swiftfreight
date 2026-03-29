@@ -4,7 +4,6 @@
     <title>{{ title }}</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
@@ -50,10 +49,18 @@
         <a href="/admin">Admin</a>
         <a href="/admin/bookings">Bookings</a>
         <a href="/admin/shipment-update">Shipment Update</a>
-        <a href="/logout">Logout</a>
+        <a href="/logout">Admin Logout</a>
+
+    {% elif session.get("user_logged_in") %}
+        <hr>
+        <a href="#">Hello, {{ session.get("user_name") }}</a>
+        <a href="/user-logout">Logout</a>
+
     {% else %}
         <hr>
-        <a href="/login">Login</a>
+        <a href="/signup">Sign Up</a>
+        <a href="/user-login">Login</a>
+        <a href="/login">Admin Login</a>
     {% endif %}
 </div>
 
@@ -64,11 +71,10 @@
             <p>{{ hero_text }}</p>
 
             <form action="/track" method="POST" class="track-box">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-    <input type="text" name="tracking_number" placeholder="Enter your tracking number">
-    <button type="submit">Track</button>
-</form>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="text" name="tracking_number" placeholder="Enter your tracking number">
+                <button type="submit">Track</button>
+            </form>
 
             <div class="hero-buttons">
                 <a href="/booking" class="btn">Book Shipment</a>
@@ -138,6 +144,7 @@
         </div>
     </div>
 </section>
+
 <section class="contact-minimal">
     <div class="contact-minimal-inner">
         <div class="contact-box">
@@ -159,6 +166,7 @@
         </div>
     </div>
 </section>
+
 <footer class="footer">
     <p>© 2026 {{ title }}. All rights reserved.</p>
     <p style="font-size:14px; opacity:0.7;">Powered by SwiftFreight Logistics</p>
@@ -167,6 +175,7 @@
 <a href="https://wa.me/{{ whatsapp }}?text=Hello%20SwiftFreight,%20I%20want%20to%20ask%20about%20shipping." class="whatsapp-btn" target="_blank">
     💬
 </a>
+
 <script>
 function toggleMenu() {
     let menu = document.getElementById("sideMenu");
@@ -178,5 +187,6 @@ function toggleMenu() {
     }
 }
 </script>
+
 </body>
 </html>

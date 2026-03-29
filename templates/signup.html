@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sign Up</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="/">Home</a>
+    <a href="/booking">Book Shipment</a>
+    <a href="/track">Track</a>
+    <a href="/user-login">Login</a>
+</nav>
+
+<section class="booking-hero">
+    <div class="booking-hero-overlay">
+        <div class="booking-hero-content">
+            <span class="section-tag">CREATE ACCOUNT</span>
+            <h2>Sign Up</h2>
+            <p>Create your account to manage your shipments easily.</p>
+        </div>
+    </div>
+</section>
+
+<section class="booking-section">
+    <div class="booking-card">
+        <div class="booking-card-top-line"></div>
+
+        {% if error %}
+            <div class="flash-message">
+                <p>{{ error }}</p>
+            </div>
+        {% endif %}
+
+        <form method="POST" class="booking-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="form-grid">
+                <div class="form-group form-group-full">
+                    <label>Full Name</label>
+                    <input type="text" name="full_name" required>
+                </div>
+
+                <div class="form-group form-group-full">
+                    <label>Email</label>
+                    <input type="email" name="email" required>
+                </div>
+
+                <div class="form-group form-group-full">
+                    <label>Password</label>
+                    <input type="password" name="password" required>
+                </div>
+            </div>
+
+            <div class="booking-submit">
+                <button type="submit" class="btn">Create Account</button>
+            </div>
+        </form>
+    </div>
+</section>
+
+</body>
+</html>

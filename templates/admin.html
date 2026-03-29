@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+
 <nav class="top-nav">
     <div class="nav-left">
         <strong>SWIFTFREIGHT</strong>
@@ -26,45 +27,47 @@
     <a href="/booking">Book Shipment</a>
     <a href="/track">Track</a>
 
+    <hr>
+
     {% if session.get("logged_in") %}
-        <hr>
         <a href="/admin">Admin</a>
         <a href="/admin/bookings">Bookings</a>
         <a href="/admin/shipment-update">Shipment Update</a>
         <a href="/logout">Logout</a>
     {% else %}
-        <hr>
-        <a href="/login">Login</a>
+        <a href="/login">Admin Login</a>
     {% endif %}
 </div>
-    <div class="container">
-        <h2>Admin: Update Shipment Status</h2>
 
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
-            <ul>
-              {% for message in messages %}
-                <li>{{ message }}</li>
-              {% endfor %}
-            </ul>
-          {% endif %}
-        {% endwith %}
+<div class="container">
+    <h2>Admin: Update Shipment Status</h2>
 
-        <form method="POST">
-            <input type="text" name="tracking_number" placeholder="Enter Tracking Number" required>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul>
+          {% for message in messages %}
+            <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
 
-            <select name="new_status" required>
-                <option value="">Select New Status</option>
-                <option value="Booking Received">Booking Received</option>
-                <option value="In Transit">In Transit</option>
-                <option value="Out for Delivery">Out for Delivery</option>
-                <option value="Delivered">Delivered</option>
-            </select>
+    <form method="POST">
+        <input type="text" name="tracking_number" placeholder="Enter Tracking Number" required>
 
-            <button type="submit">Update Status</button>
-        </form>
-    </div>
-    <script>
+        <select name="new_status" required>
+            <option value="">Select New Status</option>
+            <option value="Booking Received">Booking Received</option>
+            <option value="In Transit">In Transit</option>
+            <option value="Out for Delivery">Out for Delivery</option>
+            <option value="Delivered">Delivered</option>
+        </select>
+
+        <button type="submit">Update Status</button>
+    </form>
+</div>
+
+<script>
 function toggleMenu() {
     let menu = document.getElementById("sideMenu");
 
@@ -75,5 +78,6 @@ function toggleMenu() {
     }
 }
 </script>
+
 </body>
 </html>
