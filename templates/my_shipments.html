@@ -63,9 +63,11 @@
                         </span>
                     </td>
                     <td>
-                        <a href="/track" class="small-action-btn action-pdf">
-                            Track
-                        </a>
+                        <form action="/track" method="POST" style="display:inline;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="tracking_number" value="{{ s[0] }}">
+    <button type="submit" class="small-action-btn action-pdf">Track</button>
+</form>
                     </td>
                 </tr>
                 {% endfor %}
