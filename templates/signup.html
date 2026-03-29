@@ -6,12 +6,24 @@
 </head>
 <body>
 
-<nav class="navbar">
+<nav class="top-nav">
+    <div class="nav-left"></div>
+    <div class="nav-right">
+        <div class="hamburger" onclick="toggleMenu()">☰</div>
+    </div>
+</nav>
+
+<div id="sideMenu" class="side-menu">
+    <span class="close-btn" onclick="toggleMenu()">×</span>
+
     <a href="/">Home</a>
     <a href="/booking">Book Shipment</a>
     <a href="/track">Track</a>
+    <hr>
+    <a href="/signup">Sign Up</a>
     <a href="/user-login">Login</a>
-</nav>
+    <a href="/login">Admin Login</a>
+</div>
 
 <section class="booking-hero">
     <div class="booking-hero-overlay">
@@ -59,6 +71,17 @@
         </form>
     </div>
 </section>
+
+<script>
+function toggleMenu() {
+    let menu = document.getElementById("sideMenu");
+    if (menu.style.right === "0px") {
+        menu.style.right = "-320px";
+    } else {
+        menu.style.right = "0px";
+    }
+}
+</script>
 
 </body>
 </html>
