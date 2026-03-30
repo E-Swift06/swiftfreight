@@ -198,8 +198,9 @@ def save_booking(
 
 
 def generate_tracking_number():
-    return "SF-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=10))
-
+    prefix = "SF"
+    body = "".join(random.choices(string.ascii_uppercase + string.digits, k=10))
+    return f"{prefix}-{body}"
 
 # ------------------------------
 # Read / write helper functions
@@ -1691,6 +1692,10 @@ def internal_server_error(e):
 @app.errorhandler(CSRFError)
 def handle_csrf_error(e):
     return render_template("csrf_error.html"), 400
+
+@app.route("/test-tracking")
+def test_tracking():
+    return generate_tracking_number()
 
 
 if __name__ == "__main__":
