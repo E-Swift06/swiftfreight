@@ -351,7 +351,12 @@ def booking():
         logo = None
 
     if request.method == "POST":
-        user_email = session.get("user_email")
+        if not session.get("user_logged_in"):
+            flash("Please log in first before creating a shipment.")
+            return redirect(url_for("user_login"))
+
+        user_email = session.get("user_email", "").strip().lower()
+
         sender_name = request.form.get("sender_name", "").strip()
         sender_phone = request.form.get("sender_phone", "").strip()
         recipient_name = request.form.get("recipient_name", "").strip()
@@ -372,6 +377,7 @@ def booking():
             return redirect(url_for("booking"))
 
         tracking_number = generate_tracking_number()
+
         save_booking(
             sender_name,
             sender_phone,
@@ -381,10 +387,11 @@ def booking():
             weight_value,
             dimensions,
             service_type,
-            tracking_number
+            tracking_number,
+            user_email
         )
 
-        flash(f"Booking successfully created. Tracking Number: {tracking_number}")
+        flash(f"Booking created successfully for {user_email}. Tracking Number: {tracking_number}")
         return redirect(url_for("booking"))
 
     return render_template(
@@ -396,7 +403,6 @@ def booking():
         location=location,
         whatsapp=whatsapp
     )
-
 
 # ------------------------------
 # LOGIN
@@ -565,231 +571,269 @@ def admin():
     <html>
     <head>
         <title>Admin Dashboard</title>
-        <style>
-            body {{
-                font-family: Arial, sans-serif;
-                background: #f4f5f7;
-                margin: 0;
-                color: #222;
-            }}
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(180deg, #f7f8fa 0%, #eef1f5 100%);
+        margin: 0;
+        color: #222;
+    }
 
-            .topbar {{
-                background: linear-gradient(to right, #111, #222);
-                color: white;
-                padding: 18px 28px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-            }}
+    .topbar {
+        background: linear-gradient(135deg, #111, #2a2a2a);
+        color: white;
+        padding: 18px 28px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        position: sticky;
+        top: 0;
+        z-index: 50;
+    }
 
-            .topbar h1 {{
-                margin: 0;
-                font-size: 22px;
-                letter-spacing: 1px;
-            }}
+    .topbar h1 {
+        margin: 0;
+        font-size: 24px;
+        letter-spacing: 0.8px;
+    }
 
-            .topbar-links a {{
-                color: white;
-                text-decoration: none;
-                margin-left: 18px;
-                font-weight: bold;
-                font-size: 14px;
-            }}
+    .topbar-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
 
-            .wrapper {{
-                max-width: 1200px;
-                margin: 32px auto;
-                padding: 0 20px;
-            }}
+    .topbar-links a {
+        color: white;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 14px;
+        background: rgba(255,255,255,0.08);
+        padding: 10px 14px;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+    }
 
-            .message {{
-                background: #ecfdf3;
-                border: 1px solid #b7ebc6;
-                color: #137333;
-                padding: 14px 16px;
-                border-radius: 12px;
-                margin-bottom: 22px;
-                font-weight: bold;
-            }}
+    .topbar-links a:hover {
+        background: rgba(255,255,255,0.18);
+        transform: translateY(-1px);
+    }
 
-            .admin-grid {{
-                display: grid;
-                grid-template-columns: 1.5fr 0.9fr;
-                gap: 24px;
-            }}
+    .wrapper {
+        max-width: 1280px;
+        margin: 36px auto;
+        padding: 0 20px;
+    }
 
-            .card {{
-                background: white;
-                border-radius: 18px;
-                box-shadow: 0 10px 28px rgba(0,0,0,0.06);
-                overflow: hidden;
-                border: 1px solid #eee;
-            }}
+    .message {
+        background: #ecfdf3;
+        border: 1px solid #b7ebc6;
+        color: #137333;
+        padding: 14px 16px;
+        border-radius: 14px;
+        margin-bottom: 24px;
+        font-weight: bold;
+        box-shadow: 0 4px 12px rgba(19,115,51,0.08);
+    }
 
-            .card-header {{
-                padding: 18px 22px;
-                border-bottom: 1px solid #eee;
-                background: #fff;
-            }}
+    .admin-grid {
+        display: grid;
+        grid-template-columns: 1.65fr 0.95fr;
+        gap: 24px;
+        align-items: start;
+    }
 
-            .card-header h2 {{
-                margin: 0;
-                font-size: 20px;
-            }}
+    .card {
+        background: white;
+        border-radius: 22px;
+        box-shadow: 0 12px 32px rgba(0,0,0,0.07);
+        overflow: hidden;
+        border: 1px solid #ececec;
+    }
 
-            .card-body {{
-                padding: 24px;
-            }}
+    .card-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #eee;
+        background: linear-gradient(to right, #ffffff, #fafafa);
+    }
 
-            .section-title {{
-                font-size: 12px;
-                letter-spacing: 2px;
-                color: #d40511;
-                font-weight: 700;
-                margin: 4px 0 14px;
-                text-transform: uppercase;
-            }}
+    .card-header h2 {
+        margin: 0;
+        font-size: 22px;
+        color: #111;
+    }
 
-            label {{
-                display: block;
-                font-weight: bold;
-                margin-bottom: 7px;
-                margin-top: 14px;
-                color: #333;
-            }}
+    .card-body {
+        padding: 26px;
+    }
 
-            input, textarea {{
-                width: 100%;
-                box-sizing: border-box;
-                border: 1px solid #d8d8d8;
-                border-radius: 12px;
-                padding: 13px 14px;
-                font-size: 15px;
-                background: #fafafa;
-                transition: border 0.2s ease, box-shadow 0.2s ease;
-            }}
+    .section-title {
+        font-size: 12px;
+        letter-spacing: 2px;
+        color: #d40511;
+        font-weight: 700;
+        margin: 6px 0 16px;
+        text-transform: uppercase;
+    }
 
-            textarea {{
-                resize: vertical;
-            }}
+    label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 7px;
+        margin-top: 14px;
+        color: #333;
+    }
 
-            input:focus, textarea:focus {{
-                outline: none;
-                border-color: #d40511;
-                box-shadow: 0 0 0 3px rgba(212, 5, 17, 0.08);
-            }}
+    input, textarea {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #dcdcdc;
+        border-radius: 14px;
+        padding: 13px 14px;
+        font-size: 15px;
+        background: #fafafa;
+        transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
 
-            .two-col {{
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 16px;
-            }}
+    textarea {
+        resize: vertical;
+        min-height: 120px;
+    }
 
-            .upload-box {{
-                border: 1px dashed #cfcfcf;
-                border-radius: 14px;
-                padding: 16px;
-                background: #fafafa;
-                margin-top: 8px;
-            }}
+    input:focus, textarea:focus {
+        outline: none;
+        border-color: #d40511;
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(212, 5, 17, 0.08);
+    }
 
-            .preview-link {{
-                display: inline-block;
-                margin-top: 10px;
-                font-size: 14px;
-                color: #d40511;
-                text-decoration: none;
-                font-weight: bold;
-            }}
+    .two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+    }
 
-            .save-btn {{
-                background: linear-gradient(to right, #d40511, #b30000);
-                color: white;
-                border: none;
-                padding: 14px 22px;
-                border-radius: 12px;
-                font-weight: bold;
-                font-size: 15px;
-                cursor: pointer;
-                margin-top: 24px;
-                box-shadow: 0 6px 14px rgba(212, 5, 17, 0.18);
-            }}
+    .upload-box {
+        border: 1px dashed #cfcfcf;
+        border-radius: 16px;
+        padding: 18px;
+        background: linear-gradient(180deg, #fbfbfb 0%, #f7f7f7 100%);
+        margin-top: 8px;
+    }
 
-            .save-btn:hover {{
-                opacity: 0.95;
-            }}
+    .preview-link {
+        display: inline-block;
+        margin-top: 12px;
+        font-size: 14px;
+        color: #d40511;
+        text-decoration: none;
+        font-weight: bold;
+    }
 
-            .info-list {{
-                display: grid;
-                gap: 14px;
-            }}
+    .preview-link:hover {
+        text-decoration: underline;
+    }
 
-            .info-item {{
-                background: #fafafa;
-                border: 1px solid #eee;
-                border-radius: 14px;
-                padding: 14px 16px;
-            }}
+    .save-btn {
+        background: linear-gradient(135deg, #d40511, #b30000);
+        color: white;
+        border: none;
+        padding: 14px 24px;
+        border-radius: 14px;
+        font-weight: bold;
+        font-size: 15px;
+        cursor: pointer;
+        margin-top: 26px;
+        box-shadow: 0 10px 22px rgba(212, 5, 17, 0.18);
+        transition: all 0.22s ease;
+    }
 
-            .info-item h3 {{
-                margin: 0 0 6px;
-                font-size: 12px;
-                text-transform: uppercase;
-                letter-spacing: 1.5px;
-                color: #888;
-            }}
+    .save-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 28px rgba(212, 5, 17, 0.24);
+    }
 
-            .info-item p {{
-                margin: 0;
-                font-size: 15px;
-                line-height: 1.5;
-                word-break: break-word;
-                color: #111;
-            }}
+    .info-list {
+        display: grid;
+        gap: 14px;
+    }
 
-            .quick-actions {{
-                display: grid;
-                gap: 12px;
-                margin-top: 18px;
-            }}
+    .info-item {
+        background: linear-gradient(180deg, #fcfcfc 0%, #f8f8f8 100%);
+        border: 1px solid #eeeeee;
+        border-radius: 16px;
+        padding: 16px 18px;
+    }
 
-            .quick-actions a {{
-                display: block;
-                background: #111;
-                color: white;
-                text-decoration: none;
-                padding: 12px 14px;
-                border-radius: 12px;
-                font-weight: bold;
-                text-align: center;
-            }}
+    .info-item h3 {
+        margin: 0 0 6px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: #888;
+    }
 
-            .quick-actions a.red {{
-                background: #d40511;
-            }}
+    .info-item p {
+        margin: 0;
+        font-size: 15px;
+        line-height: 1.55;
+        word-break: break-word;
+        color: #111;
+        font-weight: 600;
+    }
 
-            @media (max-width: 900px) {{
-                .admin-grid {{
-                    grid-template-columns: 1fr;
-                }}
+    .quick-actions {
+        display: grid;
+        gap: 12px;
+        margin-top: 20px;
+    }
 
-                .two-col {{
-                    grid-template-columns: 1fr;
-                }}
+    .quick-actions a {
+        display: block;
+        background: linear-gradient(135deg, #111, #222);
+        color: white;
+        text-decoration: none;
+        padding: 13px 14px;
+        border-radius: 14px;
+        font-weight: bold;
+        text-align: center;
+        transition: all 0.2s ease;
+    }
 
-                .topbar {{
-                    flex-direction: column;
-                    align-items: flex-start;
-                    gap: 10px;
-                }}
+    .quick-actions a:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+    }
 
-                .topbar-links a {{
-                    margin-left: 0;
-                    margin-right: 14px;
-                }}
-            }}
-        </style>
+    .quick-actions a.red {
+        background: linear-gradient(135deg, #d40511, #b30000);
+    }
+
+    @media (max-width: 900px) {
+        .admin-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .two-col {
+            grid-template-columns: 1fr;
+        }
+
+        .topbar {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .topbar-links {
+            width: 100%;
+        }
+
+        .topbar-links a {
+            font-size: 13px;
+        }
+    }
+</style>
     </head>
     <body>
         <div class="topbar">
@@ -1602,7 +1646,7 @@ def my_shipments():
     if not session.get("user_logged_in"):
         return redirect(url_for("user_login"))
 
-    user_email = session.get("user_email")
+    user_email = session.get("user_email", "").strip().lower()
 
     conn = sqlite3.connect("shipping.db")
     c = conn.cursor()
@@ -1610,7 +1654,7 @@ def my_shipments():
     c.execute("""
         SELECT tracking_number, sender_name, recipient_name, status, updated_at
         FROM bookings
-        WHERE email = ?
+        WHERE LOWER(TRIM(email)) = ?
         ORDER BY id DESC
     """, (user_email,))
 
@@ -1623,6 +1667,48 @@ def my_shipments():
         title=read_text_file("settings.txt", "SWIFTFREIGHT")
     )
 
+@app.route("/debug-user")
+def debug_user():
+    return {
+        "user_logged_in": session.get("user_logged_in"),
+        "user_id": session.get("user_id"),
+        "user_name": session.get("user_name"),
+        "user_email": session.get("user_email")
+    }
+
+@app.route("/debug-bookings")
+def debug_bookings():
+    conn = sqlite3.connect("shipping.db")
+    c = conn.cursor()
+    c.execute("""
+        SELECT id, tracking_number, sender_name, recipient_name, email, status, updated_at
+        FROM bookings
+        ORDER BY id DESC
+        LIMIT 20
+    """)
+    rows = c.fetchall()
+    conn.close()
+
+    return {"rows": rows}
+
+@app.route("/debug-my-shipments")
+def debug_my_shipments():
+    user_email = (session.get("user_email") or "").strip().lower()
+
+    conn = sqlite3.connect("shipping.db")
+    c = conn.cursor()
+    c.execute("""
+        SELECT id, tracking_number, email, status
+        FROM bookings
+        WHERE LOWER(TRIM(COALESCE(email, ''))) = ?
+    """, (user_email,))
+    rows = c.fetchall()
+    conn.close()
+
+    return {
+        "session_email": user_email,
+        "matched": rows
+    }
 if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
