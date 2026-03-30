@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Session Expired</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+<section class="booking-hero">
+    <div class="booking-hero-overlay">
+        <div class="booking-hero-content">
+            <span class="section-tag">SECURITY CHECK</span>
+            <h2>Session Expired</h2>
+            <p>Your form session has expired. Please refresh and try again.</p>
+        </div>
+    </div>
+</section>
+
+<section class="booking-section">
+    <div class="booking-card" style="text-align:center;">
+        <div class="booking-card-top-line"></div>
+        <div style="font-size:70px; color:#d40511; margin-bottom:15px;">
+            <i class="fas fa-shield-halved"></i>
+        </div>
+        <h3 style="margin-bottom:10px;">Security Token Expired</h3>
+        <p style="color:#666; max-width:600px; margin:0 auto 20px;">
+            This usually happens if the page stayed open too long before submitting.
+            Refresh the page and submit again.
+        </p>
+
+        <div class="booking-submit">
+            <a href="/" class="btn">Back to Home</a>
+        </div>
+    </div>
+</section>
+
+<footer class="footer">
+    <p>© 2026 SwiftFreight. All rights reserved.</p>
+</footer>
+
+</body>
+</html>

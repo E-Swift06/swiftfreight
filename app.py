@@ -1,4 +1,4 @@
-from flask_wtf.csrf import CSRFProtect, generate_csrf
+from flask_wtf.csrf import CSRFProtect, generate_csrf, CSRFError
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
@@ -22,11 +22,11 @@ app.config["SECRET_KEY"] = "e5efa50ab6585163beb3611654a0f57e461e0394a3c4c2ce5f2e
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = False
+app.config["WTF_CSRF_TIME_LIMIT"] = 3600
 csrf = CSRFProtect(app)
 
 UPLOAD_FOLDER = "static/uploads"
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
@@ -143,7 +143,18 @@ def add_tracking_log(tracking_number, status, location):
     conn.close()
 
 
-def save_booking(sender_name, sender_phone, recipient_name, recipient_phone, address, weight, dimensions, service_type, tracking_number, user_email=None):
+def save_booking(
+    sender_name,
+    sender_phone,
+    recipient_name,
+    recipient_phone,
+    address,
+    weight,
+    dimensions,
+    service_type,
+    tracking_number,
+    user_email=None
+):
     conn = sqlite3.connect("shipping.db")
     c = conn.cursor()
 
@@ -187,7 +198,7 @@ def save_booking(sender_name, sender_phone, recipient_name, recipient_phone, add
 
 
 def generate_tracking_number():
-    return "DHL-" + "".join(random.choices(string.digits, k=10))
+    return "SF-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=10))
 
 
 # ------------------------------
@@ -209,7 +220,6 @@ def write_text_file(filename, value):
 # Initialize database
 init_db()
 upgrade_db()
-
 create_default_admin()
 
 
@@ -320,9 +330,9 @@ def track():
                 location=location,
                 whatsapp=whatsapp
             )
-        else:
-            flash("Tracking number not found.")
-            return redirect(url_for("track"))
+
+        flash("Tracking number not found.")
+        return redirect(url_for("track"))
 
     return render_template(
         "track.html",
@@ -404,8 +414,9 @@ def booking():
         whatsapp=whatsapp
     )
 
+
 # ------------------------------
-# LOGIN
+# ADMIN LOGIN
 # ------------------------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -422,6 +433,7 @@ def login():
         conn.close()
 
         if row and check_password_hash(row[0], password):
+            session.clear()
             session["logged_in"] = True
             session["admin_username"] = username
             return redirect(url_for("admin"))
@@ -501,7 +513,7 @@ def login():
 
 
 # ------------------------------
-# LOGOUT
+# ADMIN LOGOUT
 # ------------------------------
 @app.route("/logout")
 def logout():
@@ -571,269 +583,269 @@ def admin():
     <html>
     <head>
         <title>Admin Dashboard</title>
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        background: linear-gradient(180deg, #f7f8fa 0%, #eef1f5 100%);
-        margin: 0;
-        color: #222;
-    }
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                background: linear-gradient(180deg, #f7f8fa 0%, #eef1f5 100%);
+                margin: 0;
+                color: #222;
+            }}
 
-    .topbar {
-        background: linear-gradient(135deg, #111, #2a2a2a);
-        color: white;
-        padding: 18px 28px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-        position: sticky;
-        top: 0;
-        z-index: 50;
-    }
+            .topbar {{
+                background: linear-gradient(135deg, #111, #2a2a2a);
+                color: white;
+                padding: 18px 28px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+                position: sticky;
+                top: 0;
+                z-index: 50;
+            }}
 
-    .topbar h1 {
-        margin: 0;
-        font-size: 24px;
-        letter-spacing: 0.8px;
-    }
+            .topbar h1 {{
+                margin: 0;
+                font-size: 24px;
+                letter-spacing: 0.8px;
+            }}
 
-    .topbar-links {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
+            .topbar-links {{
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+            }}
 
-    .topbar-links a {
-        color: white;
-        text-decoration: none;
-        font-weight: bold;
-        font-size: 14px;
-        background: rgba(255,255,255,0.08);
-        padding: 10px 14px;
-        border-radius: 10px;
-        transition: all 0.2s ease;
-    }
+            .topbar-links a {{
+                color: white;
+                text-decoration: none;
+                font-weight: bold;
+                font-size: 14px;
+                background: rgba(255,255,255,0.08);
+                padding: 10px 14px;
+                border-radius: 10px;
+                transition: all 0.2s ease;
+            }}
 
-    .topbar-links a:hover {
-        background: rgba(255,255,255,0.18);
-        transform: translateY(-1px);
-    }
+            .topbar-links a:hover {{
+                background: rgba(255,255,255,0.18);
+                transform: translateY(-1px);
+            }}
 
-    .wrapper {
-        max-width: 1280px;
-        margin: 36px auto;
-        padding: 0 20px;
-    }
+            .wrapper {{
+                max-width: 1280px;
+                margin: 36px auto;
+                padding: 0 20px;
+            }}
 
-    .message {
-        background: #ecfdf3;
-        border: 1px solid #b7ebc6;
-        color: #137333;
-        padding: 14px 16px;
-        border-radius: 14px;
-        margin-bottom: 24px;
-        font-weight: bold;
-        box-shadow: 0 4px 12px rgba(19,115,51,0.08);
-    }
+            .message {{
+                background: #ecfdf3;
+                border: 1px solid #b7ebc6;
+                color: #137333;
+                padding: 14px 16px;
+                border-radius: 14px;
+                margin-bottom: 24px;
+                font-weight: bold;
+                box-shadow: 0 4px 12px rgba(19,115,51,0.08);
+            }}
 
-    .admin-grid {
-        display: grid;
-        grid-template-columns: 1.65fr 0.95fr;
-        gap: 24px;
-        align-items: start;
-    }
+            .admin-grid {{
+                display: grid;
+                grid-template-columns: 1.65fr 0.95fr;
+                gap: 24px;
+                align-items: start;
+            }}
 
-    .card {
-        background: white;
-        border-radius: 22px;
-        box-shadow: 0 12px 32px rgba(0,0,0,0.07);
-        overflow: hidden;
-        border: 1px solid #ececec;
-    }
+            .card {{
+                background: white;
+                border-radius: 22px;
+                box-shadow: 0 12px 32px rgba(0,0,0,0.07);
+                overflow: hidden;
+                border: 1px solid #ececec;
+            }}
 
-    .card-header {
-        padding: 20px 24px;
-        border-bottom: 1px solid #eee;
-        background: linear-gradient(to right, #ffffff, #fafafa);
-    }
+            .card-header {{
+                padding: 20px 24px;
+                border-bottom: 1px solid #eee;
+                background: linear-gradient(to right, #ffffff, #fafafa);
+            }}
 
-    .card-header h2 {
-        margin: 0;
-        font-size: 22px;
-        color: #111;
-    }
+            .card-header h2 {{
+                margin: 0;
+                font-size: 22px;
+                color: #111;
+            }}
 
-    .card-body {
-        padding: 26px;
-    }
+            .card-body {{
+                padding: 26px;
+            }}
 
-    .section-title {
-        font-size: 12px;
-        letter-spacing: 2px;
-        color: #d40511;
-        font-weight: 700;
-        margin: 6px 0 16px;
-        text-transform: uppercase;
-    }
+            .section-title {{
+                font-size: 12px;
+                letter-spacing: 2px;
+                color: #d40511;
+                font-weight: 700;
+                margin: 6px 0 16px;
+                text-transform: uppercase;
+            }}
 
-    label {
-        display: block;
-        font-weight: bold;
-        margin-bottom: 7px;
-        margin-top: 14px;
-        color: #333;
-    }
+            label {{
+                display: block;
+                font-weight: bold;
+                margin-bottom: 7px;
+                margin-top: 14px;
+                color: #333;
+            }}
 
-    input, textarea {
-        width: 100%;
-        box-sizing: border-box;
-        border: 1px solid #dcdcdc;
-        border-radius: 14px;
-        padding: 13px 14px;
-        font-size: 15px;
-        background: #fafafa;
-        transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-    }
+            input, textarea {{
+                width: 100%;
+                box-sizing: border-box;
+                border: 1px solid #dcdcdc;
+                border-radius: 14px;
+                padding: 13px 14px;
+                font-size: 15px;
+                background: #fafafa;
+                transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+            }}
 
-    textarea {
-        resize: vertical;
-        min-height: 120px;
-    }
+            textarea {{
+                resize: vertical;
+                min-height: 120px;
+            }}
 
-    input:focus, textarea:focus {
-        outline: none;
-        border-color: #d40511;
-        background: #fff;
-        box-shadow: 0 0 0 4px rgba(212, 5, 17, 0.08);
-    }
+            input:focus, textarea:focus {{
+                outline: none;
+                border-color: #d40511;
+                background: #fff;
+                box-shadow: 0 0 0 4px rgba(212, 5, 17, 0.08);
+            }}
 
-    .two-col {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 18px;
-    }
+            .two-col {{
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 18px;
+            }}
 
-    .upload-box {
-        border: 1px dashed #cfcfcf;
-        border-radius: 16px;
-        padding: 18px;
-        background: linear-gradient(180deg, #fbfbfb 0%, #f7f7f7 100%);
-        margin-top: 8px;
-    }
+            .upload-box {{
+                border: 1px dashed #cfcfcf;
+                border-radius: 16px;
+                padding: 18px;
+                background: linear-gradient(180deg, #fbfbfb 0%, #f7f7f7 100%);
+                margin-top: 8px;
+            }}
 
-    .preview-link {
-        display: inline-block;
-        margin-top: 12px;
-        font-size: 14px;
-        color: #d40511;
-        text-decoration: none;
-        font-weight: bold;
-    }
+            .preview-link {{
+                display: inline-block;
+                margin-top: 12px;
+                font-size: 14px;
+                color: #d40511;
+                text-decoration: none;
+                font-weight: bold;
+            }}
 
-    .preview-link:hover {
-        text-decoration: underline;
-    }
+            .preview-link:hover {{
+                text-decoration: underline;
+            }}
 
-    .save-btn {
-        background: linear-gradient(135deg, #d40511, #b30000);
-        color: white;
-        border: none;
-        padding: 14px 24px;
-        border-radius: 14px;
-        font-weight: bold;
-        font-size: 15px;
-        cursor: pointer;
-        margin-top: 26px;
-        box-shadow: 0 10px 22px rgba(212, 5, 17, 0.18);
-        transition: all 0.22s ease;
-    }
+            .save-btn {{
+                background: linear-gradient(135deg, #d40511, #b30000);
+                color: white;
+                border: none;
+                padding: 14px 24px;
+                border-radius: 14px;
+                font-weight: bold;
+                font-size: 15px;
+                cursor: pointer;
+                margin-top: 26px;
+                box-shadow: 0 10px 22px rgba(212, 5, 17, 0.18);
+                transition: all 0.22s ease;
+            }}
 
-    .save-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 14px 28px rgba(212, 5, 17, 0.24);
-    }
+            .save-btn:hover {{
+                transform: translateY(-2px);
+                box-shadow: 0 14px 28px rgba(212, 5, 17, 0.24);
+            }}
 
-    .info-list {
-        display: grid;
-        gap: 14px;
-    }
+            .info-list {{
+                display: grid;
+                gap: 14px;
+            }}
 
-    .info-item {
-        background: linear-gradient(180deg, #fcfcfc 0%, #f8f8f8 100%);
-        border: 1px solid #eeeeee;
-        border-radius: 16px;
-        padding: 16px 18px;
-    }
+            .info-item {{
+                background: linear-gradient(180deg, #fcfcfc 0%, #f8f8f8 100%);
+                border: 1px solid #eeeeee;
+                border-radius: 16px;
+                padding: 16px 18px;
+            }}
 
-    .info-item h3 {
-        margin: 0 0 6px;
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        color: #888;
-    }
+            .info-item h3 {{
+                margin: 0 0 6px;
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: 1.5px;
+                color: #888;
+            }}
 
-    .info-item p {
-        margin: 0;
-        font-size: 15px;
-        line-height: 1.55;
-        word-break: break-word;
-        color: #111;
-        font-weight: 600;
-    }
+            .info-item p {{
+                margin: 0;
+                font-size: 15px;
+                line-height: 1.55;
+                word-break: break-word;
+                color: #111;
+                font-weight: 600;
+            }}
 
-    .quick-actions {
-        display: grid;
-        gap: 12px;
-        margin-top: 20px;
-    }
+            .quick-actions {{
+                display: grid;
+                gap: 12px;
+                margin-top: 20px;
+            }}
 
-    .quick-actions a {
-        display: block;
-        background: linear-gradient(135deg, #111, #222);
-        color: white;
-        text-decoration: none;
-        padding: 13px 14px;
-        border-radius: 14px;
-        font-weight: bold;
-        text-align: center;
-        transition: all 0.2s ease;
-    }
+            .quick-actions a {{
+                display: block;
+                background: linear-gradient(135deg, #111, #222);
+                color: white;
+                text-decoration: none;
+                padding: 13px 14px;
+                border-radius: 14px;
+                font-weight: bold;
+                text-align: center;
+                transition: all 0.2s ease;
+            }}
 
-    .quick-actions a:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.12);
-    }
+            .quick-actions a:hover {{
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+            }}
 
-    .quick-actions a.red {
-        background: linear-gradient(135deg, #d40511, #b30000);
-    }
+            .quick-actions a.red {{
+                background: linear-gradient(135deg, #d40511, #b30000);
+            }}
 
-    @media (max-width: 900px) {
-        .admin-grid {
-            grid-template-columns: 1fr;
-        }
+            @media (max-width: 900px) {{
+                .admin-grid {{
+                    grid-template-columns: 1fr;
+                }}
 
-        .two-col {
-            grid-template-columns: 1fr;
-        }
+                .two-col {{
+                    grid-template-columns: 1fr;
+                }}
 
-        .topbar {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 12px;
-        }
+                .topbar {{
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 12px;
+                }}
 
-        .topbar-links {
-            width: 100%;
-        }
+                .topbar-links {{
+                    width: 100%;
+                }}
 
-        .topbar-links a {
-            font-size: 13px;
-        }
-    }
-</style>
+                .topbar-links a {{
+                    font-size: 13px;
+                }}
+            }}
+        </style>
     </head>
     <body>
         <div class="topbar">
@@ -1041,6 +1053,7 @@ def shipment_update():
         tracking_number_value=tracking_number_value
     )
 
+
 # ------------------------------
 # BOOKINGS LIST (WITH SEARCH)
 # ------------------------------
@@ -1089,6 +1102,7 @@ def admin_bookings():
         search=search,
         status=status
     )
+
 
 # ------------------------------
 # INVOICE PAGE
@@ -1189,10 +1203,10 @@ def awb(tracking_number):
         company_location=company_location
     )
 
+
 # ------------------------------
 # INVOICE PDF DOWNLOAD
 # ------------------------------
-
 @app.route("/invoice-pdf/<tracking_number>")
 def invoice_pdf(tracking_number):
     buffer = io.BytesIO()
@@ -1260,8 +1274,6 @@ def invoice_pdf(tracking_number):
     }
 
     story = []
-
-    # Header
     story.append(Paragraph("COMMERCIAL INVOICE", title_style))
     story.append(Paragraph(f"<b>{company_name}</b>", normal_style))
     story.append(Paragraph(company_location, normal_style))
@@ -1269,7 +1281,6 @@ def invoice_pdf(tracking_number):
     story.append(Paragraph(f"Email: {company_email}", normal_style))
     story.append(Spacer(1, 18))
 
-    # Invoice info table
     invoice_info = [
         ["Invoice No.", f"INV-{booking_info['tracking_number']}"],
         ["Tracking No.", booking_info["tracking_number"]],
@@ -1289,7 +1300,6 @@ def invoice_pdf(tracking_number):
     story.append(info_table)
     story.append(Spacer(1, 20))
 
-    # Sender / recipient
     story.append(Paragraph("SHIPPER / SENDER", heading_style))
     sender_table = Table([
         ["Name", booking_info["sender_name"]],
@@ -1306,10 +1316,10 @@ def invoice_pdf(tracking_number):
 
     story.append(Paragraph("CONSIGNEE / RECIPIENT", heading_style))
     recipient_table = Table([
-    ["Name", Paragraph(booking_info["recipient_name"], normal_style)],
-    ["Phone", Paragraph(booking_info["recipient_phone"], normal_style)],
-    ["Address", Paragraph(booking_info["address"], normal_style)],
-], colWidths=[100, 340])
+        ["Name", Paragraph(booking_info["recipient_name"], normal_style)],
+        ["Phone", Paragraph(booking_info["recipient_phone"], normal_style)],
+        ["Address", Paragraph(booking_info["address"], normal_style)],
+    ], colWidths=[100, 340])
     recipient_table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#fafafa")),
         ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#dddddd")),
@@ -1319,16 +1329,15 @@ def invoice_pdf(tracking_number):
     story.append(recipient_table)
     story.append(Spacer(1, 20))
 
-    # Shipment details
     shipment_table = Table([
-    ["Description", "Service Type", "Weight", "Dimensions"],
-    [
-        Paragraph("General Cargo / Shipment", normal_style),
-        Paragraph(booking_info["service_type"], normal_style),
-        Paragraph(f"{booking_info['weight']} kg", normal_style),
-        Paragraph(booking_info["dimensions"], normal_style)
-    ],
-], colWidths=[150, 110, 80, 130])
+        ["Description", "Service Type", "Weight", "Dimensions"],
+        [
+            Paragraph("General Cargo / Shipment", normal_style),
+            Paragraph(booking_info["service_type"], normal_style),
+            Paragraph(f"{booking_info['weight']} kg", normal_style),
+            Paragraph(booking_info["dimensions"], normal_style)
+        ],
+    ], colWidths=[150, 110, 80, 130])
 
     shipment_table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#d40511")),
@@ -1342,7 +1351,6 @@ def invoice_pdf(tracking_number):
     story.append(shipment_table)
     story.append(Spacer(1, 20))
 
-    # Current location
     story.append(Paragraph("CURRENT SHIPMENT LOCATION", heading_style))
     location_table = Table([
         ["Location", booking_info["current_location"] if booking_info["current_location"] else "Pending Pickup"]
@@ -1370,13 +1378,11 @@ def invoice_pdf(tracking_number):
         download_name=f"invoice_{tracking_number}.pdf",
         mimetype="application/pdf"
     )
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
-from flask import send_file
-import io
 
+
+# ------------------------------
+# AWB PDF DOWNLOAD
+# ------------------------------
 @app.route("/awb-pdf/<tracking_number>")
 def awb_pdf(tracking_number):
     buffer = io.BytesIO()
@@ -1390,7 +1396,6 @@ def awb_pdf(tracking_number):
     )
 
     styles = getSampleStyleSheet()
-
     title_style = ParagraphStyle(
         "Title",
         parent=styles["Title"],
@@ -1398,7 +1403,6 @@ def awb_pdf(tracking_number):
         fontSize=20,
         spaceAfter=12
     )
-
     section_style = ParagraphStyle(
         "Section",
         parent=styles["Heading3"],
@@ -1406,7 +1410,6 @@ def awb_pdf(tracking_number):
         fontSize=11,
         spaceAfter=8
     )
-
     normal = styles["Normal"]
 
     conn = sqlite3.connect("shipping.db")
@@ -1415,7 +1418,8 @@ def awb_pdf(tracking_number):
         SELECT sender_name, sender_phone, recipient_name, recipient_phone,
                address, weight, dimensions, service_type, tracking_number,
                status, current_location, updated_at
-        FROM bookings WHERE tracking_number = ?
+        FROM bookings
+        WHERE tracking_number = ?
     """, (tracking_number,))
     booking = c.fetchone()
     conn.close()
@@ -1429,15 +1433,12 @@ def awb_pdf(tracking_number):
     company_location = read_text_file("location.txt", "Kuala Lumpur, Malaysia")
 
     story = []
-
-    # HEADER
     story.append(Paragraph("AIR WAYBILL", title_style))
     story.append(Paragraph(f"<b>{company_name}</b>", normal))
     story.append(Paragraph(company_location, normal))
     story.append(Paragraph(f"{company_phone} | {company_email}", normal))
     story.append(Spacer(1, 16))
 
-    # TRACKING INFO
     tracking_table = Table([
         ["Tracking Number", booking[8]],
         ["Status", booking[9]],
@@ -1454,13 +1455,11 @@ def awb_pdf(tracking_number):
     story.append(tracking_table)
     story.append(Spacer(1, 18))
 
-    # BARCODE
     story.append(Paragraph("BARCODE", section_style))
-    barcode = code128.Code128(booking[8], barHeight=18*mm, barWidth=0.45)
+    barcode = code128.Code128(booking[8], barHeight=18 * mm, barWidth=0.45)
     story.append(barcode)
     story.append(Spacer(1, 18))
 
-    # QR CODE
     story.append(Paragraph("QR CODE", section_style))
 
     qr_data = f"""
@@ -1481,7 +1480,6 @@ Weight: {booking[5]} kg
     story.append(qr_img)
     story.append(Spacer(1, 18))
 
-    # SHIPPER
     story.append(Paragraph("SHIPPER", section_style))
     sender_table = Table([
         ["Name", Paragraph(booking[0], normal)],
@@ -1498,7 +1496,6 @@ Weight: {booking[5]} kg
     story.append(sender_table)
     story.append(Spacer(1, 14))
 
-    # CONSIGNEE
     story.append(Paragraph("CONSIGNEE", section_style))
     receiver_table = Table([
         ["Name", Paragraph(booking[2], normal)],
@@ -1516,7 +1513,6 @@ Weight: {booking[5]} kg
     story.append(receiver_table)
     story.append(Spacer(1, 18))
 
-    # SHIPMENT DETAILS
     story.append(Paragraph("SHIPMENT DETAILS", section_style))
 
     shipment_table = Table([
@@ -1535,7 +1531,6 @@ Weight: {booking[5]} kg
     story.append(shipment_table)
     story.append(Spacer(1, 20))
 
-    # LOCATION
     story.append(Paragraph("CURRENT LOCATION", section_style))
     location_table = Table([
         ["Location", booking[10] if booking[10] else "Pending Pickup"]
@@ -1566,6 +1561,10 @@ Weight: {booking[5]} kg
         mimetype="application/pdf"
     )
 
+
+# ------------------------------
+# USER SIGNUP
+# ------------------------------
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     error = ""
@@ -1580,8 +1579,7 @@ def signup():
         else:
             conn = sqlite3.connect("shipping.db")
             c = conn.cursor()
-
-            c.execute("SELECT id FROM users WHERE email = ?", (email,))
+            c.execute("SELECT id FROM users WHERE LOWER(TRIM(email)) = ?", (email,))
             existing_user = c.fetchone()
 
             if existing_user:
@@ -1603,6 +1601,9 @@ def signup():
     return render_template("signup.html", error=error)
 
 
+# ------------------------------
+# USER LOGIN
+# ------------------------------
 @app.route("/user-login", methods=["GET", "POST"])
 def user_login():
     error = ""
@@ -1616,12 +1617,13 @@ def user_login():
         c.execute("""
             SELECT id, full_name, password_hash
             FROM users
-            WHERE email = ?
+            WHERE LOWER(TRIM(email)) = ?
         """, (email,))
         user = c.fetchone()
         conn.close()
 
         if user and check_password_hash(user[2], password):
+            session.clear()
             session["user_logged_in"] = True
             session["user_id"] = user[0]
             session["user_name"] = user[1]
@@ -1633,6 +1635,9 @@ def user_login():
     return render_template("user_login.html", error=error)
 
 
+# ------------------------------
+# USER LOGOUT
+# ------------------------------
 @app.route("/user-logout")
 def user_logout():
     session.pop("user_logged_in", None)
@@ -1641,6 +1646,10 @@ def user_logout():
     session.pop("user_email", None)
     return redirect(url_for("home"))
 
+
+# ------------------------------
+# MY SHIPMENTS
+# ------------------------------
 @app.route("/my-shipments")
 def my_shipments():
     if not session.get("user_logged_in"):
@@ -1650,14 +1659,12 @@ def my_shipments():
 
     conn = sqlite3.connect("shipping.db")
     c = conn.cursor()
-
     c.execute("""
         SELECT tracking_number, sender_name, recipient_name, status, updated_at
         FROM bookings
-        WHERE LOWER(TRIM(email)) = ?
+        WHERE LOWER(TRIM(COALESCE(email, ''))) = ?
         ORDER BY id DESC
     """, (user_email,))
-
     shipments = c.fetchall()
     conn.close()
 
@@ -1667,49 +1674,25 @@ def my_shipments():
         title=read_text_file("settings.txt", "SWIFTFREIGHT")
     )
 
-@app.route("/debug-user")
-def debug_user():
-    return {
-        "user_logged_in": session.get("user_logged_in"),
-        "user_id": session.get("user_id"),
-        "user_name": session.get("user_name"),
-        "user_email": session.get("user_email")
-    }
 
-@app.route("/debug-bookings")
-def debug_bookings():
-    conn = sqlite3.connect("shipping.db")
-    c = conn.cursor()
-    c.execute("""
-        SELECT id, tracking_number, sender_name, recipient_name, email, status, updated_at
-        FROM bookings
-        ORDER BY id DESC
-        LIMIT 20
-    """)
-    rows = c.fetchall()
-    conn.close()
+# ------------------------------
+# ERROR PAGES
+# ------------------------------
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template("404.html"), 404
 
-    return {"rows": rows}
 
-@app.route("/debug-my-shipments")
-def debug_my_shipments():
-    user_email = (session.get("user_email") or "").strip().lower()
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template("500.html"), 500
 
-    conn = sqlite3.connect("shipping.db")
-    c = conn.cursor()
-    c.execute("""
-        SELECT id, tracking_number, email, status
-        FROM bookings
-        WHERE LOWER(TRIM(COALESCE(email, ''))) = ?
-    """, (user_email,))
-    rows = c.fetchall()
-    conn.close()
 
-    return {
-        "session_email": user_email,
-        "matched": rows
-    }
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    return render_template("csrf_error.html"), 400
+
+
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
