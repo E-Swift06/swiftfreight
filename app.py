@@ -347,10 +347,13 @@ def booking():
 
     if request.method == "POST":
         if not session.get("user_logged_in") and not session.get("logged_in"):
-           flash("Please log in first before creating a shipment.")
-        return redirect(url_for("user_login"))
+            flash("Please log in first before creating a shipment.")
+            return redirect(url_for("user_login"))
 
-        user_email = session.get("user_email", "").strip().lower() if session.get("user_logged_in") else None
+    if session.get("user_logged_in"):
+        user_email = session.get("user_email", "").strip().lower()
+    else:
+        user_email = None
 
         sender_name = request.form.get("sender_name", "").strip()
         sender_phone = request.form.get("sender_phone", "").strip()
