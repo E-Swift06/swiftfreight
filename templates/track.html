@@ -113,7 +113,7 @@
     <div class="contact-minimal-inner">
         <div class="contact-box">
             <h4>Call</h4>
-            <p>{{ phone if phone else '+60 12-345 6789' }}</p>
+            <p>{{ phone if phone else '' }}</p>
         </div>
 
         <div class="contact-box">
@@ -123,7 +123,7 @@
 
         <div class="contact-box">
             <h4>Location</h4>
-            <p>{{ location if location else 'Kuala Lumpur, Malaysia' }}</p>
+            <p>{{ location if location else 'Miri, Malaysia' }}</p>
         </div>
     </div>
 </section>
@@ -133,7 +133,7 @@
     <p style="font-size:14px; opacity:0.7;">Powered by SwiftFreight Logistics</p>
 </footer>
 
-<a href="https://wa.me/{{ whatsapp if whatsapp else '60123456789' }}?text=Hello%20SwiftFreight,%20I%20want%20to%20ask%20about%20shipping." class="whatsapp-btn" target="_blank">
+<a href="https://wa.me/{{ whatsapp if whatsapp else '' }}?text=Hello%20SwiftFreight,%20I%20want%20to%20ask%20about%20shipping." class="whatsapp-btn" target="_blank">
     💬
 </a>
 

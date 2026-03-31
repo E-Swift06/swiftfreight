@@ -17,6 +17,8 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 
 app = Flask(__name__)
+print("RUNNING FILE:", os.path.abspath(__file__))
+print("RUNNING FOLDER:", os.getcwd())
 
 app.config["SECRET_KEY"] = "e5efa50ab6585163beb3611654a0f57e461e0394a3c4c2ce5f2e124ade3935e5"
 app.config["SESSION_COOKIE_HTTPONLY"] = True
@@ -60,22 +62,22 @@ def upgrade_db():
 
     try:
         c.execute("ALTER TABLE bookings ADD COLUMN status TEXT DEFAULT 'Shipment Created'")
-    except:
+    except Exception:
         pass
 
     try:
         c.execute("ALTER TABLE bookings ADD COLUMN current_location TEXT DEFAULT 'Pending Pickup'")
-    except:
+    except Exception:
         pass
 
     try:
         c.execute("ALTER TABLE bookings ADD COLUMN updated_at TEXT DEFAULT ''")
-    except:
+    except Exception:
         pass
 
     try:
         c.execute("ALTER TABLE bookings ADD COLUMN email TEXT")
-    except:
+    except Exception:
         pass
 
     c.execute("""
@@ -202,6 +204,7 @@ def generate_tracking_number():
     body = "".join(random.choices(string.ascii_uppercase + string.digits, k=10))
     return f"{prefix}-{body}"
 
+
 # ------------------------------
 # Read / write helper functions
 # ------------------------------
@@ -209,7 +212,7 @@ def read_text_file(filename, default_value):
     try:
         with open(filename, "r", encoding="utf-8") as f:
             return f.read().strip()
-    except:
+    except Exception:
         return default_value
 
 
@@ -237,10 +240,10 @@ def home():
     )
     logo = read_text_file("logo.txt", "")
     banner = read_text_file("banner.txt", "")
-    phone = read_text_file("phone.txt", "+60 12-345 6789")
+    phone = read_text_file("phone.txt", "")
     email = read_text_file("email.txt", "support@swiftfreight.com")
-    location = read_text_file("location.txt", "Kuala Lumpur, Malaysia")
-    whatsapp = read_text_file("whatsapp.txt", "60123456789")
+    location = read_text_file("location.txt", "Miri, Malaysia")
+    whatsapp = read_text_file("whatsapp.txt", "")
 
     if logo == "":
         logo = None
@@ -268,10 +271,10 @@ def home():
 def track():
     title = read_text_file("settings.txt", "MY SHIPPING COMPANY")
     logo = read_text_file("logo.txt", "")
-    phone = read_text_file("phone.txt", "+60 12-345 6789")
+    phone = read_text_file("phone.txt", "")
     email = read_text_file("email.txt", "support@swiftfreight.com")
-    location = read_text_file("location.txt", "Kuala Lumpur, Malaysia")
-    whatsapp = read_text_file("whatsapp.txt", "60123456789")
+    location = read_text_file("location.txt", "Miri, Malaysia")
+    whatsapp = read_text_file("whatsapp.txt", "")
 
     if logo == "":
         logo = None
@@ -285,6 +288,7 @@ def track():
 
         conn = sqlite3.connect("shipping.db")
         c = conn.cursor()
+
         c.execute("""
             SELECT sender_name, sender_phone, recipient_name, recipient_phone,
                    address, weight, dimensions, service_type, tracking_number,
@@ -353,10 +357,10 @@ def track():
 def booking():
     title = read_text_file("settings.txt", "MY SHIPPING COMPANY")
     logo = read_text_file("logo.txt", "")
-    phone = read_text_file("phone.txt", "+60 12-345 6789")
+    phone = read_text_file("phone.txt", "")
     email = read_text_file("email.txt", "support@swiftfreight.com")
-    location = read_text_file("location.txt", "Kuala Lumpur, Malaysia")
-    whatsapp = read_text_file("whatsapp.txt", "60123456789")
+    location = read_text_file("location.txt", "Miri, Malaysia")
+    whatsapp = read_text_file("whatsapp.txt", "")
 
     if logo == "":
         logo = None
@@ -438,8 +442,8 @@ def login():
             session["logged_in"] = True
             session["admin_username"] = username
             return redirect(url_for("admin"))
-        else:
-            error = "Wrong login details."
+
+        error = "Wrong login details."
 
     return f"""
     <html>
@@ -496,16 +500,12 @@ def login():
             <h2>Admin Login</h2>
             <form method="POST">
                 <input type="hidden" name="csrf_token" value="{generate_csrf()}">
-
                 <label>Username</label>
                 <input name="username">
-
                 <label>Password</label>
                 <input name="password" type="password">
-
                 <button type="submit">Login</button>
             </form>
-
             <p class="error">{error}</p>
         </div>
     </body>
@@ -570,10 +570,10 @@ def admin():
         "hero_text.txt",
         "Air freight, sea freight, express delivery and international logistics solutions for your business and personal needs."
     )
-    phone = read_text_file("phone.txt", "+60 12-345 6789")
+    phone = read_text_file("phone.txt", "")
     email = read_text_file("email.txt", "support@swiftfreight.com")
-    location = read_text_file("location.txt", "Kuala Lumpur, Malaysia")
-    whatsapp = read_text_file("whatsapp.txt", "60123456789")
+    location = read_text_file("location.txt", "Miri, Malaysia")
+    whatsapp = read_text_file("whatsapp.txt", "")
     logo = read_text_file("logo.txt", "")
     banner = read_text_file("banner.txt", "")
 
@@ -591,7 +591,6 @@ def admin():
                 margin: 0;
                 color: #222;
             }}
-
             .topbar {{
                 background: linear-gradient(135deg, #111, #2a2a2a);
                 color: white;
@@ -604,19 +603,16 @@ def admin():
                 top: 0;
                 z-index: 50;
             }}
-
             .topbar h1 {{
                 margin: 0;
                 font-size: 24px;
                 letter-spacing: 0.8px;
             }}
-
             .topbar-links {{
                 display: flex;
                 flex-wrap: wrap;
                 gap: 10px;
             }}
-
             .topbar-links a {{
                 color: white;
                 text-decoration: none;
@@ -627,18 +623,15 @@ def admin():
                 border-radius: 10px;
                 transition: all 0.2s ease;
             }}
-
             .topbar-links a:hover {{
                 background: rgba(255,255,255,0.18);
                 transform: translateY(-1px);
             }}
-
             .wrapper {{
                 max-width: 1280px;
                 margin: 36px auto;
                 padding: 0 20px;
             }}
-
             .message {{
                 background: #ecfdf3;
                 border: 1px solid #b7ebc6;
@@ -649,14 +642,12 @@ def admin():
                 font-weight: bold;
                 box-shadow: 0 4px 12px rgba(19,115,51,0.08);
             }}
-
             .admin-grid {{
                 display: grid;
                 grid-template-columns: 1.65fr 0.95fr;
                 gap: 24px;
                 align-items: start;
             }}
-
             .card {{
                 background: white;
                 border-radius: 22px;
@@ -664,23 +655,19 @@ def admin():
                 overflow: hidden;
                 border: 1px solid #ececec;
             }}
-
             .card-header {{
                 padding: 20px 24px;
                 border-bottom: 1px solid #eee;
                 background: linear-gradient(to right, #ffffff, #fafafa);
             }}
-
             .card-header h2 {{
                 margin: 0;
                 font-size: 22px;
                 color: #111;
             }}
-
             .card-body {{
                 padding: 26px;
             }}
-
             .section-title {{
                 font-size: 12px;
                 letter-spacing: 2px;
@@ -689,7 +676,6 @@ def admin():
                 margin: 6px 0 16px;
                 text-transform: uppercase;
             }}
-
             label {{
                 display: block;
                 font-weight: bold;
@@ -697,7 +683,6 @@ def admin():
                 margin-top: 14px;
                 color: #333;
             }}
-
             input, textarea {{
                 width: 100%;
                 box-sizing: border-box;
@@ -708,25 +693,21 @@ def admin():
                 background: #fafafa;
                 transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
             }}
-
             textarea {{
                 resize: vertical;
                 min-height: 120px;
             }}
-
             input:focus, textarea:focus {{
                 outline: none;
                 border-color: #d40511;
                 background: #fff;
                 box-shadow: 0 0 0 4px rgba(212, 5, 17, 0.08);
             }}
-
             .two-col {{
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 gap: 18px;
             }}
-
             .upload-box {{
                 border: 1px dashed #cfcfcf;
                 border-radius: 16px;
@@ -734,7 +715,6 @@ def admin():
                 background: linear-gradient(180deg, #fbfbfb 0%, #f7f7f7 100%);
                 margin-top: 8px;
             }}
-
             .preview-link {{
                 display: inline-block;
                 margin-top: 12px;
@@ -743,11 +723,9 @@ def admin():
                 text-decoration: none;
                 font-weight: bold;
             }}
-
             .preview-link:hover {{
                 text-decoration: underline;
             }}
-
             .save-btn {{
                 background: linear-gradient(135deg, #d40511, #b30000);
                 color: white;
@@ -761,24 +739,20 @@ def admin():
                 box-shadow: 0 10px 22px rgba(212, 5, 17, 0.18);
                 transition: all 0.22s ease;
             }}
-
             .save-btn:hover {{
                 transform: translateY(-2px);
                 box-shadow: 0 14px 28px rgba(212, 5, 17, 0.24);
             }}
-
             .info-list {{
                 display: grid;
                 gap: 14px;
             }}
-
             .info-item {{
                 background: linear-gradient(180deg, #fcfcfc 0%, #f8f8f8 100%);
                 border: 1px solid #eeeeee;
                 border-radius: 16px;
                 padding: 16px 18px;
             }}
-
             .info-item h3 {{
                 margin: 0 0 6px;
                 font-size: 12px;
@@ -786,7 +760,6 @@ def admin():
                 letter-spacing: 1.5px;
                 color: #888;
             }}
-
             .info-item p {{
                 margin: 0;
                 font-size: 15px;
@@ -795,13 +768,11 @@ def admin():
                 color: #111;
                 font-weight: 600;
             }}
-
             .quick-actions {{
                 display: grid;
                 gap: 12px;
                 margin-top: 20px;
             }}
-
             .quick-actions a {{
                 display: block;
                 background: linear-gradient(135deg, #111, #222);
@@ -813,35 +784,28 @@ def admin():
                 text-align: center;
                 transition: all 0.2s ease;
             }}
-
             .quick-actions a:hover {{
                 transform: translateY(-2px);
                 box-shadow: 0 10px 20px rgba(0,0,0,0.12);
             }}
-
             .quick-actions a.red {{
                 background: linear-gradient(135deg, #d40511, #b30000);
             }}
-
             @media (max-width: 900px) {{
                 .admin-grid {{
                     grid-template-columns: 1fr;
                 }}
-
                 .two-col {{
                     grid-template-columns: 1fr;
                 }}
-
                 .topbar {{
                     flex-direction: column;
                     align-items: flex-start;
                     gap: 12px;
                 }}
-
                 .topbar-links {{
                     width: 100%;
                 }}
-
                 .topbar-links a {{
                     font-size: 13px;
                 }}
@@ -1141,9 +1105,9 @@ def invoice(tracking_number):
     }
 
     company_name = read_text_file("settings.txt", "MY SHIPPING COMPANY")
-    company_phone = read_text_file("phone.txt", "+60 12-345 6789")
+    company_phone = read_text_file("phone.txt", "")
     company_email = read_text_file("email.txt", "support@swiftfreight.com")
-    company_location = read_text_file("location.txt", "Kuala Lumpur, Malaysia")
+    company_location = read_text_file("location.txt", "Miri, Malaysia")
 
     return render_template(
         "invoice.html",
@@ -1191,9 +1155,9 @@ def awb(tracking_number):
     }
 
     company_name = read_text_file("settings.txt", "MY SHIPPING COMPANY")
-    company_phone = read_text_file("phone.txt", "+60 12-345 6789")
+    company_phone = read_text_file("phone.txt", "")
     company_email = read_text_file("email.txt", "support@swiftfreight.com")
-    company_location = read_text_file("location.txt", "Kuala Lumpur, Malaysia")
+    company_location = read_text_file("location.txt", "Miri, Malaysia")
 
     return render_template(
         "awb.html",
@@ -1255,9 +1219,9 @@ def invoice_pdf(tracking_number):
         return "Invoice not found", 404
 
     company_name = read_text_file("settings.txt", "MY SHIPPING COMPANY")
-    company_phone = read_text_file("phone.txt", "+60 12-345 6789")
+    company_phone = read_text_file("phone.txt", "")
     company_email = read_text_file("email.txt", "support@swiftfreight.com")
-    company_location = read_text_file("location.txt", "Kuala Lumpur, Malaysia")
+    company_location = read_text_file("location.txt", "Miri, Malaysia")
 
     booking_info = {
         "sender_name": booking[0],
@@ -1429,9 +1393,9 @@ def awb_pdf(tracking_number):
         return "AWB not found", 404
 
     company_name = read_text_file("settings.txt", "SWIFTFREIGHT")
-    company_phone = read_text_file("phone.txt", "+60 12-345 6789")
+    company_phone = read_text_file("phone.txt", "")
     company_email = read_text_file("email.txt", "support@swiftfreight.com")
-    company_location = read_text_file("location.txt", "Kuala Lumpur, Malaysia")
+    company_location = read_text_file("location.txt", "Miri, Malaysia")
 
     story = []
     story.append(Paragraph("AIR WAYBILL", title_style))
@@ -1630,8 +1594,8 @@ def user_login():
             session["user_name"] = user[1]
             session["user_email"] = email
             return redirect(url_for("home"))
-        else:
-            error = "Invalid login details."
+
+        error = "Invalid login details."
 
     return render_template("user_login.html", error=error)
 
@@ -1677,6 +1641,14 @@ def my_shipments():
 
 
 # ------------------------------
+# TEST ROUTE
+# ------------------------------
+@app.route("/test-tracking")
+def test_tracking():
+    return generate_tracking_number()
+
+
+# ------------------------------
 # ERROR PAGES
 # ------------------------------
 @app.errorhandler(404)
@@ -1693,11 +1665,6 @@ def internal_server_error(e):
 def handle_csrf_error(e):
     return render_template("csrf_error.html"), 400
 
-@app.route("/test-tracking")
-def test_tracking():
-    return generate_tracking_number()
-
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, debug=True)
