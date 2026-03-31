@@ -346,11 +346,11 @@ def booking():
         logo = None
 
     if request.method == "POST":
-        if not session.get("user_logged_in"):
-            flash("Please log in first before creating a shipment.")
-            return redirect(url_for("user_login"))
+        if not session.get("user_logged_in") and not session.get("logged_in"):
+           flash("Please log in first before creating a shipment.")
+        return redirect(url_for("user_login"))
 
-        user_email = session.get("user_email", "").strip().lower()
+        user_email = session.get("user_email", "").strip().lower() if session.get("user_logged_in") else None
 
         sender_name = request.form.get("sender_name", "").strip()
         sender_phone = request.form.get("sender_phone", "").strip()
@@ -1769,19 +1769,6 @@ def restore_booking():
     </body>
     </html>
     """
-
-@app.route("/reset-admin")
-def reset_admin():
-    new_password = "yournewpassword123"
-
-    with get_conn() as conn:
-        with conn.cursor() as c:
-            c.execute(
-                "UPDATE admins SET password_hash = %s WHERE username = %s",
-                (generate_password_hash(new_password), "admin")
-            )
-
-    return f"Admin password reset to: {new_password}"
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
