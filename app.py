@@ -799,7 +799,7 @@ def admin():
             <h1>SwiftFreight Admin</h1>
             <div class="topbar-links">
                 <a href="/">View Website</a>
-                <a href="/booking">Booking Page</a>
+                <a href="/admin/create-booking">Create Booking</a>
                 <a href="/track">Tracking Page</a>
                 <a href="/admin/bookings">Bookings</a>
                 <a href="/admin/shipment-update">Shipment Update</a>
@@ -1767,6 +1767,172 @@ def restore_booking():
                 <input name="email">
 
                 <button type="submit">Restore Booking</button>
+            </form>
+        </div>
+    </body>
+    </html>
+    """
+
+@app.route("/admin/create-booking", methods=["GET", "POST"])
+def admin_create_booking():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+
+    message = ""
+    title = read_text_file("settings.txt", "MY SHIPPING COMPANY")
+    logo = read_text_file("logo.txt", "")
+    phone = read_text_file("phone.txt", "")
+    email = read_text_file("email.txt", "support@swiftfreight.com")
+    location = read_text_file("location.txt", "Miri, Malaysia")
+    whatsapp = read_text_file("whatsapp.txt", "")
+
+    if logo == "":
+        logo = None
+
+    if request.method == "POST":
+        sender_name = request.form.get("sender_name", "").strip()
+        sender_phone = request.form.get("sender_phone", "").strip()
+        recipient_name = request.form.get("recipient_name", "").strip()
+        recipient_phone = request.form.get("recipient_phone", "").strip()
+        address = request.form.get("address", "").strip()
+        weight = request.form.get("weight", "").strip()
+        dimensions = request.form.get("dimensions", "").strip()
+        service_type = request.form.get("service_type", "").strip()
+
+        if not all([sender_name, sender_phone, recipient_name, recipient_phone, address, weight, dimensions, service_type]):
+            message = "All fields are required."
+        else:
+            try:
+                weight_value = float(weight)
+                tracking_number = generate_tracking_number()
+
+                save_booking(
+                    sender_name,
+                    sender_phone,
+                    recipient_name,
+                    recipient_phone,
+                    address,
+                    weight_value,
+                    dimensions,
+                    service_type,
+                    tracking_number,
+                    None
+                )
+
+                message = f"Booking created successfully. Tracking Number: {tracking_number}"
+            except ValueError:
+                message = "Weight must be a number."
+
+    return f"""
+    <html>
+    <head>
+        <title>Create Booking</title>
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                background: #f5f5f5;
+                margin: 0;
+                padding: 30px;
+            }}
+            .box {{
+                max-width: 760px;
+                margin: auto;
+                background: white;
+                padding: 25px;
+                border-radius: 12px;
+                box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+            }}
+            h2 {{
+                margin-top: 0;
+            }}
+            label {{
+                display: block;
+                font-weight: bold;
+                margin-top: 14px;
+                margin-bottom: 6px;
+            }}
+            input, textarea {{
+                width: 100%;
+                padding: 12px;
+                box-sizing: border-box;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+                margin-bottom: 10px;
+            }}
+            textarea {{
+                min-height: 100px;
+                resize: vertical;
+            }}
+            button {{
+                background: #111;
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-weight: bold;
+                cursor: pointer;
+                margin-top: 12px;
+            }}
+            .msg {{
+                background: #ecfdf3;
+                border: 1px solid #b7ebc6;
+                color: #137333;
+                padding: 12px;
+                border-radius: 8px;
+                margin-bottom: 16px;
+                font-weight: bold;
+            }}
+            .toplinks {{
+                margin-bottom: 18px;
+            }}
+            .toplinks a {{
+                margin-right: 12px;
+                text-decoration: none;
+                font-weight: bold;
+                color: #d40511;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="box">
+            <div class="toplinks">
+                <a href="/admin">Back to Admin</a>
+                <a href="/admin/bookings">View Bookings</a>
+                <a href="/admin/shipment-update">Shipment Update</a>
+            </div>
+
+            <h2>Create Booking (Admin)</h2>
+
+            {f'<div class="msg">{message}</div>' if message else ''}
+
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{generate_csrf()}">
+
+                <label>Sender Name</label>
+                <input name="sender_name" required>
+
+                <label>Sender Phone</label>
+                <input name="sender_phone" required>
+
+                <label>Recipient Name</label>
+                <input name="recipient_name" required>
+
+                <label>Recipient Phone</label>
+                <input name="recipient_phone" required>
+
+                <label>Recipient Address</label>
+                <textarea name="address" required></textarea>
+
+                <label>Weight (kg)</label>
+                <input name="weight" required>
+
+                <label>Dimensions</label>
+                <input name="dimensions" placeholder="e.g. 40x30x20 cm" required>
+
+                <label>Service Type</label>
+                <input name="service_type" placeholder="Air Freight / Express / Sea Freight" required>
+
+                <button type="submit">Create Booking</button>
             </form>
         </div>
     </body>
