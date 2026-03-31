@@ -2,6 +2,7 @@ from flask_wtf.csrf import CSRFProtect, generate_csrf, CSRFError
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import sqlite3
 import random
 import string
@@ -139,7 +140,7 @@ def add_tracking_log(tracking_number, status, location):
         tracking_number,
         status,
         location,
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).strftime("%Y-%m-%d %H:%M:%S")
     ))
     conn.commit()
     conn.close()
@@ -189,7 +190,7 @@ def save_booking(
         tracking_number,
         "Shipment Created",
         "Pending Pickup",
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).strftime("%Y-%m-%d %H:%M:%S"),
         user_email
     ))
 
@@ -988,7 +989,7 @@ def shipment_update():
             tracking_number_value = request.form.get("tracking_number", "").strip()
             status = request.form.get("status", "").strip()
             current_location = request.form.get("current_location", "").strip()
-            updated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            updated_at = datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).strftime("%Y-%m-%d %H:%M:%S")
 
             conn = sqlite3.connect("shipping.db")
             c = conn.cursor()
@@ -1729,7 +1730,7 @@ def restore_booking():
                         tracking_number,
                         status,
                         current_location,
-                        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).strftime("%Y-%m-%d %H:%M:%S"),
                         user_email
                     ))
 
