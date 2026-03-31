@@ -65,11 +65,35 @@
     <div class="booking-card">
         <div class="booking-card-top-line"></div>
 
-        {% if message %}
-            <div class="flash-message">
-                <p>{{ message }}</p>
-            </div>
-        {% endif %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="flash-msg"
+           style="
+           margin-bottom:20px;
+           padding:15px;
+           border-radius:10px;
+           font-weight:bold;
+
+           {% if category == 'success' %}
+               background:#e6f9f0;
+               color:#0f5132;
+               border:1px solid #b7ebc6;
+           {% elif category == 'error' %}
+               background:#f8d7da;
+               color:#842029;
+               border:1px solid #f5c2c7;
+           {% else %}
+               background:#f8d7da;
+               color:#842029;
+               border:1px solid #f5c2c7;
+           {% endif %}
+           ">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
 
         <div class="shipment-update-grid">
 

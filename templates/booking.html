@@ -1,7 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>{{ title }}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title if title else 'SWIFTFREIGHT' }}</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -34,7 +36,6 @@
     </div>
 </nav>
 
-<!-- SIDE MENU -->
 <div id="sideMenu" class="side-menu">
     <span class="close-btn" onclick="toggleMenu()">×</span>
 
@@ -48,7 +49,6 @@
         <a href="/admin/bookings">Bookings</a>
         <a href="/admin/shipment-update">Shipment Update</a>
         <a href="/logout">Admin Logout</a>
-
     {% elif session.get("user_logged_in") %}
         <hr>
         <div style="padding: 10px 0; font-weight: bold;">
@@ -56,7 +56,6 @@
         </div>
         <a href="/my-shipments">My Shipments</a>
         <a href="/user-logout">Logout</a>
-
     {% else %}
         <hr>
         <a href="/signup">Sign Up</a>
@@ -79,31 +78,35 @@
     <div class="booking-card">
         <div class="booking-card-top-line"></div>
 
-        <!-- ✅ FIXED FLASH MESSAGE -->
         {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div class="flash-msg"
-                   style="
-                   margin-bottom:20px;
-                   padding:15px;
-                   border-radius:10px;
-                   font-weight:bold;
-
-                   {% if category == 'success' %}
-                       background:#e6f9f0;
-                       color:#0f5132;
-                       border:1px solid #b7ebc6;
-                   {% elif category == 'error' %}
-                       background:#f8d7da;
-                       color:#842029;
-                       border:1px solid #f5c2c7;
-                   {% endif %}
-                   ">
-                {{ message }}
-              </div>
-            {% endfor %}
-          {% endif %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div
+                        class="flash-msg"
+                        style="
+                            margin-bottom: 20px;
+                            padding: 15px;
+                            border-radius: 10px;
+                            font-weight: bold;
+                            {% if category == 'success' %}
+                                background: #e6f9f0;
+                                color: #0f5132;
+                                border: 1px solid #b7ebc6;
+                            {% elif category == 'error' %}
+                                background: #f8d7da;
+                                color: #842029;
+                                border: 1px solid #f5c2c7;
+                            {% else %}
+                                background: #f8d7da;
+                                color: #842029;
+                                border: 1px solid #f5c2c7;
+                            {% endif %}
+                        "
+                    >
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
         {% endwith %}
 
         <form method="POST" class="booking-form">
@@ -111,43 +114,43 @@
 
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Sender Name</label>
-                    <input type="text" name="sender_name" required>
+                    <label for="sender_name">Sender Name</label>
+                    <input type="text" id="sender_name" name="sender_name" required>
                 </div>
 
                 <div class="form-group">
-                    <label>Sender Phone</label>
-                    <input type="text" name="sender_phone" required>
+                    <label for="sender_phone">Sender Phone</label>
+                    <input type="text" id="sender_phone" name="sender_phone" required>
                 </div>
 
                 <div class="form-group">
-                    <label>Recipient Name</label>
-                    <input type="text" name="recipient_name" required>
+                    <label for="recipient_name">Recipient Name</label>
+                    <input type="text" id="recipient_name" name="recipient_name" required>
                 </div>
 
                 <div class="form-group">
-                    <label>Recipient Phone</label>
-                    <input type="text" name="recipient_phone" required>
+                    <label for="recipient_phone">Recipient Phone</label>
+                    <input type="text" id="recipient_phone" name="recipient_phone" required>
                 </div>
 
                 <div class="form-group form-group-full">
-                    <label>Delivery Address</label>
-                    <textarea name="address" rows="4" required></textarea>
+                    <label for="address">Delivery Address</label>
+                    <textarea id="address" name="address" rows="4" required></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label>Weight (kg)</label>
-                    <input type="number" step="0.1" name="weight" required>
+                    <label for="weight">Weight (kg)</label>
+                    <input type="number" id="weight" step="0.1" name="weight" required>
                 </div>
 
                 <div class="form-group">
-                    <label>Dimensions</label>
-                    <input type="text" name="dimensions" placeholder="e.g. 40 x 30 x 20 cm" required>
+                    <label for="dimensions">Dimensions</label>
+                    <input type="text" id="dimensions" name="dimensions" placeholder="e.g. 40 x 30 x 20 cm" required>
                 </div>
 
                 <div class="form-group form-group-full">
-                    <label>Service Type</label>
-                    <select name="service_type" required>
+                    <label for="service_type">Service Type</label>
+                    <select id="service_type" name="service_type" required>
                         <option value="">Select service</option>
                         <option value="Air Freight">Air Freight</option>
                         <option value="Sea Freight">Sea Freight</option>
@@ -184,7 +187,7 @@
 
 <footer class="footer">
     <p>© 2026 {{ title if title else 'SWIFTFREIGHT' }}. All rights reserved.</p>
-    <p style="font-size:14px; opacity:0.7;">Powered by SwiftFreight Logistics</p>
+    <p style="font-size: 14px; opacity: 0.7;">Powered by SwiftFreight Logistics</p>
 </footer>
 
 <a href="https://wa.me/{{ whatsapp if whatsapp else '' }}?text=Hello%20SwiftFreight,%20I%20want%20to%20ask%20about%20shipping." class="whatsapp-btn" target="_blank">
@@ -193,13 +196,12 @@
 
 <script>
 function toggleMenu() {
-    let menu = document.getElementById("sideMenu");
+    const menu = document.getElementById("sideMenu");
     menu.style.right = (menu.style.right === "0px") ? "-260px" : "0px";
 }
 
-/* ✅ Auto-hide message */
 setTimeout(() => {
-    document.querySelectorAll(".flash-msg").forEach(el => {
+    document.querySelectorAll(".flash-msg").forEach((el) => {
         el.style.transition = "opacity 0.5s";
         el.style.opacity = "0";
         setTimeout(() => el.remove(), 500);

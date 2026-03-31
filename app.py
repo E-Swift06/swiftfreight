@@ -266,7 +266,7 @@ def track():
         tracking_number = request.form.get("tracking_number", "").strip()
 
         if not tracking_number:
-            flash("Please enter a tracking number.")
+            flash("Please enter a tracking number.", "error")
             return redirect(url_for("track"))
 
         with get_conn() as conn:
@@ -316,7 +316,7 @@ def track():
                 whatsapp=whatsapp
             )
 
-        flash("Tracking number not found.")
+        flash("Tracking number not found.", "error")
         return redirect(url_for("track"))
 
     return render_template(
@@ -362,7 +362,7 @@ def booking():
         try:
             weight_value = float(weight)
         except ValueError:
-            flash("Weight must be a number.")
+            flash("Weight must be a number.", "error")
             return redirect(url_for("booking"))
 
         tracking_number = generate_tracking_number()
@@ -392,6 +392,98 @@ def booking():
         location=location,
         whatsapp=whatsapp
     )
+
+
+# ------------------------------
+# ADMIN LOGIN
+# ------------------------------
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = ""
+
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "").strip()
+
+        with get_conn() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT password_hash FROM admins WHERE username = %s", (username,))
+                row = c.fetchone()
+
+        if row and check_password_hash(row[0], password):
+            session.clear()
+            session["logged_in"] = True
+            session["admin_username"] = username
+            return redirect(url_for("admin"))
+
+        error = "Wrong login details."
+
+    return f"""
+    <html>
+    <head>
+        <title>Admin Login</title>
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                background: #f5f5f5;
+                margin: 0;
+                padding: 40px;
+            }}
+            .box {{
+                max-width: 420px;
+                margin: auto;
+                background: white;
+                padding: 30px;
+                border-radius: 12px;
+                box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+            }}
+            h2 {{
+                margin-top: 0;
+            }}
+            label {{
+                display: block;
+                font-weight: bold;
+                margin-bottom: 6px;
+            }}
+            input {{
+                width: 100%;
+                padding: 12px;
+                margin-bottom: 16px;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+                box-sizing: border-box;
+            }}
+            button {{
+                background: #d40511;
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-weight: bold;
+                cursor: pointer;
+            }}
+            .error {{
+                color: red;
+                margin-top: 14px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="box">
+            <h2>Admin Login</h2>
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{generate_csrf()}">
+                <label>Username</label>
+                <input name="username">
+                <label>Password</label>
+                <input name="password" type="password">
+                <button type="submit">Login</button>
+            </form>
+            <p class="error">{error}</p>
+        </div>
+    </body>
+    </html>
+    """
 
 
 # ------------------------------
@@ -826,7 +918,6 @@ def shipment_update():
     if not session.get("logged_in"):
         return redirect(url_for("login"))
 
-    message = ""
     shipment = None
     tracking_number_value = ""
 
@@ -844,7 +935,7 @@ def shipment_update():
                     shipment = c.fetchone()
 
             if not shipment:
-                message = "Shipment not found."
+                flash("Shipment not found.", "error")
 
     if request.method == "POST":
         action = request.form.get("action")
@@ -862,7 +953,7 @@ def shipment_update():
                     shipment = c.fetchone()
 
             if not shipment:
-                message = "Shipment not found."
+                flash("Shipment not found.", "error")
 
         elif action == "update":
             tracking_number_value = request.form.get("tracking_number", "").strip()
@@ -886,12 +977,11 @@ def shipment_update():
                     shipment = c.fetchone()
 
             add_tracking_log(tracking_number_value, status, current_location)
-            message = "Shipment updated successfully."
+            flash("Shipment updated successfully.", "success")
 
     return render_template(
         "shipment_update.html",
         shipment=shipment,
-        message=message,
         tracking_number_value=tracking_number_value
     )
 
@@ -1427,7 +1517,7 @@ def signup():
                             VALUES (%s, %s, %s)
                         """, (full_name, email, password_hash))
 
-                        flash("Account created successfully. Please log in.")
+                        flash("Account created successfully. Please log in.", "success")
                         return redirect(url_for("user_login"))
 
     return render_template("signup.html", error=error)
@@ -1672,6 +1762,10 @@ def restore_booking():
     </html>
     """
 
+
+# ------------------------------
+# ADMIN CREATE BOOKING
+# ------------------------------
 @app.route("/admin/create-booking", methods=["GET", "POST"])
 def admin_create_booking():
     if not session.get("logged_in"):
@@ -1837,6 +1931,7 @@ def admin_create_booking():
     </body>
     </html>
     """
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
