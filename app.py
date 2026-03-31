@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from zoneinfo import ZoneInfo
-import sqlite3
+import psycopg
 import random
 import string
 import os
@@ -18,6 +18,20 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 
 app = Flask(__name__)
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+
+def get_conn():
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL is not set.")
+    return psycopg.connect(DATABASE_URL)
+
+
+def malaysia_now_str():
+    return datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).strftime("%Y-%m-%d %H:%M:%S")
+
+
 print("RUNNING FILE:", os.path.abspath(__file__))
 print("RUNNING FOLDER:", os.getcwd())
 
@@ -37,113 +51,85 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # Database helper functions
 # ------------------------------
 def init_db():
-    conn = sqlite3.connect("shipping.db")
-    c = conn.cursor()
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS bookings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            sender_name TEXT NOT NULL,
-            sender_phone TEXT NOT NULL,
-            recipient_name TEXT NOT NULL,
-            recipient_phone TEXT NOT NULL,
-            address TEXT NOT NULL,
-            weight REAL NOT NULL,
-            dimensions TEXT NOT NULL,
-            service_type TEXT NOT NULL,
-            tracking_number TEXT NOT NULL
-        )
-    """)
-    conn.commit()
-    conn.close()
+    with get_conn() as conn:
+        with conn.cursor() as c:
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS bookings (
+                    id SERIAL PRIMARY KEY,
+                    sender_name TEXT NOT NULL,
+                    sender_phone TEXT NOT NULL,
+                    recipient_name TEXT NOT NULL,
+                    recipient_phone TEXT NOT NULL,
+                    address TEXT NOT NULL,
+                    weight DOUBLE PRECISION NOT NULL,
+                    dimensions TEXT NOT NULL,
+                    service_type TEXT NOT NULL,
+                    tracking_number TEXT UNIQUE NOT NULL,
+                    status TEXT DEFAULT 'Shipment Created',
+                    current_location TEXT DEFAULT 'Pending Pickup',
+                    updated_at TEXT DEFAULT '',
+                    email TEXT
+                )
+            """)
+
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS admins (
+                    id SERIAL PRIMARY KEY,
+                    username TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL
+                )
+            """)
+
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS tracking_logs (
+                    id SERIAL PRIMARY KEY,
+                    tracking_number TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    location TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+            """)
+
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    full_name TEXT NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL
+                )
+            """)
 
 
 def upgrade_db():
-    conn = sqlite3.connect("shipping.db")
-    c = conn.cursor()
-
-    try:
-        c.execute("ALTER TABLE bookings ADD COLUMN status TEXT DEFAULT 'Shipment Created'")
-    except Exception:
-        pass
-
-    try:
-        c.execute("ALTER TABLE bookings ADD COLUMN current_location TEXT DEFAULT 'Pending Pickup'")
-    except Exception:
-        pass
-
-    try:
-        c.execute("ALTER TABLE bookings ADD COLUMN updated_at TEXT DEFAULT ''")
-    except Exception:
-        pass
-
-    try:
-        c.execute("ALTER TABLE bookings ADD COLUMN email TEXT")
-    except Exception:
-        pass
-
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS admins (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL
-        )
-    """)
-
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS tracking_logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tracking_number TEXT NOT NULL,
-            status TEXT NOT NULL,
-            location TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        )
-    """)
-
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            full_name TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL
-        )
-    """)
-
-    conn.commit()
-    conn.close()
+    pass
 
 
 def create_default_admin():
-    conn = sqlite3.connect("shipping.db")
-    c = conn.cursor()
+    with get_conn() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id FROM admins WHERE username = %s", ("admin",))
+            existing = c.fetchone()
 
-    c.execute("SELECT * FROM admins WHERE username = ?", ("admin",))
-    existing = c.fetchone()
-
-    if not existing:
-        hashed_password = generate_password_hash("1234")
-        c.execute(
-            "INSERT INTO admins (username, password_hash) VALUES (?, ?)",
-            ("admin", hashed_password)
-        )
-        conn.commit()
-
-    conn.close()
+            if not existing:
+                hashed_password = generate_password_hash("1234")
+                c.execute(
+                    "INSERT INTO admins (username, password_hash) VALUES (%s, %s)",
+                    ("admin", hashed_password)
+                )
 
 
 def add_tracking_log(tracking_number, status, location):
-    conn = sqlite3.connect("shipping.db")
-    c = conn.cursor()
-    c.execute("""
-        INSERT INTO tracking_logs (tracking_number, status, location, updated_at)
-        VALUES (?, ?, ?, ?)
-    """, (
-        tracking_number,
-        status,
-        location,
-        datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).strftime("%Y-%m-%d %H:%M:%S")
-    ))
-    conn.commit()
-    conn.close()
+    with get_conn() as conn:
+        with conn.cursor() as c:
+            c.execute("""
+                INSERT INTO tracking_logs (tracking_number, status, location, updated_at)
+                VALUES (%s, %s, %s, %s)
+            """, (
+                tracking_number,
+                status,
+                location,
+                malaysia_now_str()
+            ))
 
 
 def save_booking(
@@ -158,44 +144,40 @@ def save_booking(
     tracking_number,
     user_email=None
 ):
-    conn = sqlite3.connect("shipping.db")
-    c = conn.cursor()
-
-    c.execute("""
-        INSERT INTO bookings (
-            sender_name,
-            sender_phone,
-            recipient_name,
-            recipient_phone,
-            address,
-            weight,
-            dimensions,
-            service_type,
-            tracking_number,
-            status,
-            current_location,
-            updated_at,
-            email
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        sender_name,
-        sender_phone,
-        recipient_name,
-        recipient_phone,
-        address,
-        weight,
-        dimensions,
-        service_type,
-        tracking_number,
-        "Shipment Created",
-        "Pending Pickup",
-        datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).strftime("%Y-%m-%d %H:%M:%S"),
-        user_email
-    ))
-
-    conn.commit()
-    conn.close()
+    with get_conn() as conn:
+        with conn.cursor() as c:
+            c.execute("""
+                INSERT INTO bookings (
+                    sender_name,
+                    sender_phone,
+                    recipient_name,
+                    recipient_phone,
+                    address,
+                    weight,
+                    dimensions,
+                    service_type,
+                    tracking_number,
+                    status,
+                    current_location,
+                    updated_at,
+                    email
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                sender_name,
+                sender_phone,
+                recipient_name,
+                recipient_phone,
+                address,
+                weight,
+                dimensions,
+                service_type,
+                tracking_number,
+                "Shipment Created",
+                "Pending Pickup",
+                malaysia_now_str(),
+                user_email
+            ))
 
     add_tracking_log(tracking_number, "Shipment Created", "Pending Pickup")
 
@@ -287,27 +269,24 @@ def track():
             flash("Please enter a tracking number.")
             return redirect(url_for("track"))
 
-        conn = sqlite3.connect("shipping.db")
-        c = conn.cursor()
+        with get_conn() as conn:
+            with conn.cursor() as c:
+                c.execute("""
+                    SELECT sender_name, sender_phone, recipient_name, recipient_phone,
+                           address, weight, dimensions, service_type, tracking_number,
+                           status, current_location, updated_at
+                    FROM bookings
+                    WHERE tracking_number = %s
+                """, (tracking_number,))
+                booking = c.fetchone()
 
-        c.execute("""
-            SELECT sender_name, sender_phone, recipient_name, recipient_phone,
-                   address, weight, dimensions, service_type, tracking_number,
-                   status, current_location, updated_at
-            FROM bookings
-            WHERE tracking_number = ?
-        """, (tracking_number,))
-        booking = c.fetchone()
-
-        c.execute("""
-            SELECT status, location, updated_at
-            FROM tracking_logs
-            WHERE tracking_number = ?
-            ORDER BY id DESC
-        """, (tracking_number,))
-        logs = c.fetchall()
-
-        conn.close()
+                c.execute("""
+                    SELECT status, location, updated_at
+                    FROM tracking_logs
+                    WHERE tracking_number = %s
+                    ORDER BY id DESC
+                """, (tracking_number,))
+                logs = c.fetchall()
 
         if booking:
             booking_info = {
@@ -432,11 +411,10 @@ def login():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "").strip()
 
-        conn = sqlite3.connect("shipping.db")
-        c = conn.cursor()
-        c.execute("SELECT password_hash FROM admins WHERE username = ?", (username,))
-        row = c.fetchone()
-        conn.close()
+        with get_conn() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT password_hash FROM admins WHERE username = %s", (username,))
+                row = c.fetchone()
 
         if row and check_password_hash(row[0], password):
             session.clear()
@@ -822,6 +800,7 @@ def admin():
                 <a href="/track">Tracking Page</a>
                 <a href="/admin/bookings">Bookings</a>
                 <a href="/admin/shipment-update">Shipment Update</a>
+                <a href="/admin/restore-booking">Restore Booking</a>
                 <a href="/logout">Logout</a>
             </div>
         </div>
@@ -953,15 +932,14 @@ def shipment_update():
         tracking_number_value = request.args.get("tracking_number", "").strip()
 
         if tracking_number_value:
-            conn = sqlite3.connect("shipping.db")
-            c = conn.cursor()
-            c.execute("""
-                SELECT id, tracking_number, status, current_location, updated_at
-                FROM bookings
-                WHERE tracking_number = ?
-            """, (tracking_number_value,))
-            shipment = c.fetchone()
-            conn.close()
+            with get_conn() as conn:
+                with conn.cursor() as c:
+                    c.execute("""
+                        SELECT id, tracking_number, status, current_location, updated_at
+                        FROM bookings
+                        WHERE tracking_number = %s
+                    """, (tracking_number_value,))
+                    shipment = c.fetchone()
 
             if not shipment:
                 message = "Shipment not found."
@@ -972,15 +950,14 @@ def shipment_update():
         if action == "search":
             tracking_number_value = request.form.get("tracking_number", "").strip()
 
-            conn = sqlite3.connect("shipping.db")
-            c = conn.cursor()
-            c.execute("""
-                SELECT id, tracking_number, status, current_location, updated_at
-                FROM bookings
-                WHERE tracking_number = ?
-            """, (tracking_number_value,))
-            shipment = c.fetchone()
-            conn.close()
+            with get_conn() as conn:
+                with conn.cursor() as c:
+                    c.execute("""
+                        SELECT id, tracking_number, status, current_location, updated_at
+                        FROM bookings
+                        WHERE tracking_number = %s
+                    """, (tracking_number_value,))
+                    shipment = c.fetchone()
 
             if not shipment:
                 message = "Shipment not found."
@@ -989,27 +966,24 @@ def shipment_update():
             tracking_number_value = request.form.get("tracking_number", "").strip()
             status = request.form.get("status", "").strip()
             current_location = request.form.get("current_location", "").strip()
-            updated_at = datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).strftime("%Y-%m-%d %H:%M:%S")
+            updated_at = malaysia_now_str()
 
-            conn = sqlite3.connect("shipping.db")
-            c = conn.cursor()
-            c.execute("""
-                UPDATE bookings
-                SET status = ?, current_location = ?, updated_at = ?
-                WHERE tracking_number = ?
-            """, (status, current_location, updated_at, tracking_number_value))
-            conn.commit()
+            with get_conn() as conn:
+                with conn.cursor() as c:
+                    c.execute("""
+                        UPDATE bookings
+                        SET status = %s, current_location = %s, updated_at = %s
+                        WHERE tracking_number = %s
+                    """, (status, current_location, updated_at, tracking_number_value))
+
+                    c.execute("""
+                        SELECT id, tracking_number, status, current_location, updated_at
+                        FROM bookings
+                        WHERE tracking_number = %s
+                    """, (tracking_number_value,))
+                    shipment = c.fetchone()
 
             add_tracking_log(tracking_number_value, status, current_location)
-
-            c.execute("""
-                SELECT id, tracking_number, status, current_location, updated_at
-                FROM bookings
-                WHERE tracking_number = ?
-            """, (tracking_number_value,))
-            shipment = c.fetchone()
-            conn.close()
-
             message = "Shipment updated successfully."
 
     return render_template(
@@ -1031,9 +1005,6 @@ def admin_bookings():
     search = request.args.get("search", "").strip()
     status = request.args.get("status", "").strip()
 
-    conn = sqlite3.connect("shipping.db")
-    c = conn.cursor()
-
     query = """
         SELECT id, tracking_number, sender_name, recipient_name, service_type,
                status, current_location, updated_at
@@ -1045,22 +1016,23 @@ def admin_bookings():
     if search:
         query += """
             AND (
-                tracking_number LIKE ?
-                OR sender_name LIKE ?
-                OR recipient_name LIKE ?
+                tracking_number ILIKE %s
+                OR sender_name ILIKE %s
+                OR recipient_name ILIKE %s
             )
         """
         params.extend([f"%{search}%", f"%{search}%", f"%{search}%"])
 
     if status:
-        query += " AND status = ?"
+        query += " AND status = %s"
         params.append(status)
 
     query += " ORDER BY id DESC"
 
-    c.execute(query, params)
-    bookings = c.fetchall()
-    conn.close()
+    with get_conn() as conn:
+        with conn.cursor() as c:
+            c.execute(query, params)
+            bookings = c.fetchall()
 
     return render_template(
         "bookings_list.html",
@@ -1075,17 +1047,16 @@ def admin_bookings():
 # ------------------------------
 @app.route("/invoice/<tracking_number>")
 def invoice(tracking_number):
-    conn = sqlite3.connect("shipping.db")
-    c = conn.cursor()
-    c.execute("""
-        SELECT sender_name, sender_phone, recipient_name, recipient_phone,
-               address, weight, dimensions, service_type, tracking_number,
-               status, current_location, updated_at
-        FROM bookings
-        WHERE tracking_number = ?
-    """, (tracking_number,))
-    booking = c.fetchone()
-    conn.close()
+    with get_conn() as conn:
+        with conn.cursor() as c:
+            c.execute("""
+                SELECT sender_name, sender_phone, recipient_name, recipient_phone,
+                       address, weight, dimensions, service_type, tracking_number,
+                       status, current_location, updated_at
+                FROM bookings
+                WHERE tracking_number = %s
+            """, (tracking_number,))
+            booking = c.fetchone()
 
     if not booking:
         return "Invoice not found", 404
@@ -1125,17 +1096,16 @@ def invoice(tracking_number):
 # ------------------------------
 @app.route("/awb/<tracking_number>")
 def awb(tracking_number):
-    conn = sqlite3.connect("shipping.db")
-    c = conn.cursor()
-    c.execute("""
-        SELECT sender_name, sender_phone, recipient_name, recipient_phone,
-               address, weight, dimensions, service_type, tracking_number,
-               status, current_location, updated_at
-        FROM bookings
-        WHERE tracking_number = ?
-    """, (tracking_number,))
-    booking = c.fetchone()
-    conn.close()
+    with get_conn() as conn:
+        with conn.cursor() as c:
+            c.execute("""
+                SELECT sender_name, sender_phone, recipient_name, recipient_phone,
+                       address, weight, dimensions, service_type, tracking_number,
+                       status, current_location, updated_at
+                FROM bookings
+                WHERE tracking_number = %s
+            """, (tracking_number,))
+            booking = c.fetchone()
 
     if not booking:
         return "AWB not found", 404
@@ -1204,17 +1174,16 @@ def invoice_pdf(tracking_number):
     )
     normal_style = styles["Normal"]
 
-    conn = sqlite3.connect("shipping.db")
-    c = conn.cursor()
-    c.execute("""
-        SELECT sender_name, sender_phone, recipient_name, recipient_phone,
-               address, weight, dimensions, service_type, tracking_number,
-               status, current_location, updated_at
-        FROM bookings
-        WHERE tracking_number = ?
-    """, (tracking_number,))
-    booking = c.fetchone()
-    conn.close()
+    with get_conn() as conn:
+        with conn.cursor() as c:
+            c.execute("""
+                SELECT sender_name, sender_phone, recipient_name, recipient_phone,
+                       address, weight, dimensions, service_type, tracking_number,
+                       status, current_location, updated_at
+                FROM bookings
+                WHERE tracking_number = %s
+            """, (tracking_number,))
+            booking = c.fetchone()
 
     if not booking:
         return "Invoice not found", 404
@@ -1378,17 +1347,16 @@ def awb_pdf(tracking_number):
     )
     normal = styles["Normal"]
 
-    conn = sqlite3.connect("shipping.db")
-    c = conn.cursor()
-    c.execute("""
-        SELECT sender_name, sender_phone, recipient_name, recipient_phone,
-               address, weight, dimensions, service_type, tracking_number,
-               status, current_location, updated_at
-        FROM bookings
-        WHERE tracking_number = ?
-    """, (tracking_number,))
-    booking = c.fetchone()
-    conn.close()
+    with get_conn() as conn:
+        with conn.cursor() as c:
+            c.execute("""
+                SELECT sender_name, sender_phone, recipient_name, recipient_phone,
+                       address, weight, dimensions, service_type, tracking_number,
+                       status, current_location, updated_at
+                FROM bookings
+                WHERE tracking_number = %s
+            """, (tracking_number,))
+            booking = c.fetchone()
 
     if not booking:
         return "AWB not found", 404
@@ -1543,26 +1511,22 @@ def signup():
         if not full_name or not email or not password:
             error = "All fields are required."
         else:
-            conn = sqlite3.connect("shipping.db")
-            c = conn.cursor()
-            c.execute("SELECT id FROM users WHERE LOWER(TRIM(email)) = ?", (email,))
-            existing_user = c.fetchone()
+            with get_conn() as conn:
+                with conn.cursor() as c:
+                    c.execute("SELECT id FROM users WHERE LOWER(TRIM(email)) = %s", (email,))
+                    existing_user = c.fetchone()
 
-            if existing_user:
-                error = "Email already registered."
-            else:
-                password_hash = generate_password_hash(password)
-                c.execute("""
-                    INSERT INTO users (full_name, email, password_hash)
-                    VALUES (?, ?, ?)
-                """, (full_name, email, password_hash))
-                conn.commit()
-                conn.close()
+                    if existing_user:
+                        error = "Email already registered."
+                    else:
+                        password_hash = generate_password_hash(password)
+                        c.execute("""
+                            INSERT INTO users (full_name, email, password_hash)
+                            VALUES (%s, %s, %s)
+                        """, (full_name, email, password_hash))
 
-                flash("Account created successfully. Please log in.")
-                return redirect(url_for("user_login"))
-
-            conn.close()
+                        flash("Account created successfully. Please log in.")
+                        return redirect(url_for("user_login"))
 
     return render_template("signup.html", error=error)
 
@@ -1578,15 +1542,14 @@ def user_login():
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "").strip()
 
-        conn = sqlite3.connect("shipping.db")
-        c = conn.cursor()
-        c.execute("""
-            SELECT id, full_name, password_hash
-            FROM users
-            WHERE LOWER(TRIM(email)) = ?
-        """, (email,))
-        user = c.fetchone()
-        conn.close()
+        with get_conn() as conn:
+            with conn.cursor() as c:
+                c.execute("""
+                    SELECT id, full_name, password_hash
+                    FROM users
+                    WHERE LOWER(TRIM(email)) = %s
+                """, (email,))
+                user = c.fetchone()
 
         if user and check_password_hash(user[2], password):
             session.clear()
@@ -1623,16 +1586,15 @@ def my_shipments():
 
     user_email = session.get("user_email", "").strip().lower()
 
-    conn = sqlite3.connect("shipping.db")
-    c = conn.cursor()
-    c.execute("""
-        SELECT tracking_number, sender_name, recipient_name, status, updated_at
-        FROM bookings
-        WHERE LOWER(TRIM(COALESCE(email, ''))) = ?
-        ORDER BY id DESC
-    """, (user_email,))
-    shipments = c.fetchall()
-    conn.close()
+    with get_conn() as conn:
+        with conn.cursor() as c:
+            c.execute("""
+                SELECT tracking_number, sender_name, recipient_name, status, updated_at
+                FROM bookings
+                WHERE LOWER(TRIM(COALESCE(email, ''))) = %s
+                ORDER BY id DESC
+            """, (user_email,))
+            shipments = c.fetchall()
 
     return render_template(
         "my_shipments.html",
@@ -1665,6 +1627,11 @@ def internal_server_error(e):
 @app.errorhandler(CSRFError)
 def handle_csrf_error(e):
     return render_template("csrf_error.html"), 400
+
+
+# ------------------------------
+# RESTORE BOOKING
+# ------------------------------
 @app.route("/admin/restore-booking", methods=["GET", "POST"])
 def restore_booking():
     if not session.get("logged_in"):
@@ -1692,51 +1659,48 @@ def restore_booking():
             try:
                 weight_value = float(weight)
 
-                conn = sqlite3.connect("shipping.db")
-                c = conn.cursor()
+                with get_conn() as conn:
+                    with conn.cursor() as c:
+                        c.execute("SELECT id FROM bookings WHERE tracking_number = %s", (tracking_number,))
+                        existing = c.fetchone()
 
-                c.execute("SELECT id FROM bookings WHERE tracking_number = ?", (tracking_number,))
-                existing = c.fetchone()
+                        if existing:
+                            message = "This tracking number already exists."
+                        else:
+                            c.execute("""
+                                INSERT INTO bookings (
+                                    sender_name,
+                                    sender_phone,
+                                    recipient_name,
+                                    recipient_phone,
+                                    address,
+                                    weight,
+                                    dimensions,
+                                    service_type,
+                                    tracking_number,
+                                    status,
+                                    current_location,
+                                    updated_at,
+                                    email
+                                )
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            """, (
+                                sender_name,
+                                sender_phone,
+                                recipient_name,
+                                recipient_phone,
+                                address,
+                                weight_value,
+                                dimensions,
+                                service_type,
+                                tracking_number,
+                                status,
+                                current_location,
+                                malaysia_now_str(),
+                                user_email
+                            ))
 
-                if existing:
-                    message = "This tracking number already exists."
-                else:
-                    c.execute("""
-                        INSERT INTO bookings (
-                            sender_name,
-                            sender_phone,
-                            recipient_name,
-                            recipient_phone,
-                            address,
-                            weight,
-                            dimensions,
-                            service_type,
-                            tracking_number,
-                            status,
-                            current_location,
-                            updated_at,
-                            email
-                        )
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (
-                        sender_name,
-                        sender_phone,
-                        recipient_name,
-                        recipient_phone,
-                        address,
-                        weight_value,
-                        dimensions,
-                        service_type,
-                        tracking_number,
-                        status,
-                        current_location,
-                        datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).strftime("%Y-%m-%d %H:%M:%S"),
-                        user_email
-                    ))
-
-                    conn.commit()
-                    conn.close()
-
+                if message == "":
                     add_tracking_log(tracking_number, status, current_location)
                     message = "Booking restored successfully."
 
@@ -1805,6 +1769,8 @@ def restore_booking():
     </body>
     </html>
     """
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)

@@ -4,3 +4,4 @@ Werkzeug
 gunicorn
 reportlab
 qrcode[pil]
+psycopg[binary]
