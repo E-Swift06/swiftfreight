@@ -335,12 +335,12 @@ def track():
 # ------------------------------
 @app.route("/booking", methods=["GET", "POST"])
 def booking():
-    title = get_setting("site_title", "MY SHIPPING COMPANY")
-    logo = get_setting("logo", "")
-    phone = get_setting("phone", "")
-    email = get_setting("email", "support@swiftfreight.com")
-    location = get_setting("location", "Miri, Malaysia")
-    whatsapp = get_setting("whatsapp", "")
+    title = read_text_file("settings.txt", "MY SHIPPING COMPANY")
+    logo = read_text_file("logo.txt", "")
+    phone = read_text_file("phone.txt", "")
+    email = read_text_file("email.txt", "support@swiftfreight.com")
+    location = read_text_file("location.txt", "Miri, Malaysia")
+    whatsapp = read_text_file("whatsapp.txt", "")
 
     if logo == "":
         logo = None
@@ -392,98 +392,6 @@ def booking():
         location=location,
         whatsapp=whatsapp
     )
-
-
-# ------------------------------
-# ADMIN LOGIN
-# ------------------------------
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    error = ""
-
-    if request.method == "POST":
-        username = request.form.get("username", "").strip()
-        password = request.form.get("password", "").strip()
-
-        with get_conn() as conn:
-            with conn.cursor() as c:
-                c.execute("SELECT password_hash FROM admins WHERE username = %s", (username,))
-                row = c.fetchone()
-
-        if row and check_password_hash(row[0], password):
-            session.clear()
-            session["logged_in"] = True
-            session["admin_username"] = username
-            return redirect(url_for("admin"))
-
-        error = "Wrong login details."
-
-    return f"""
-    <html>
-    <head>
-        <title>Admin Login</title>
-        <style>
-            body {{
-                font-family: Arial, sans-serif;
-                background: #f5f5f5;
-                margin: 0;
-                padding: 40px;
-            }}
-            .box {{
-                max-width: 420px;
-                margin: auto;
-                background: white;
-                padding: 30px;
-                border-radius: 12px;
-                box-shadow: 0 4px 14px rgba(0,0,0,0.08);
-            }}
-            h2 {{
-                margin-top: 0;
-            }}
-            label {{
-                display: block;
-                font-weight: bold;
-                margin-bottom: 6px;
-            }}
-            input {{
-                width: 100%;
-                padding: 12px;
-                margin-bottom: 16px;
-                border: 1px solid #ccc;
-                border-radius: 8px;
-                box-sizing: border-box;
-            }}
-            button {{
-                background: #d40511;
-                color: white;
-                border: none;
-                padding: 12px 20px;
-                border-radius: 8px;
-                font-weight: bold;
-                cursor: pointer;
-            }}
-            .error {{
-                color: red;
-                margin-top: 14px;
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="box">
-            <h2>Admin Login</h2>
-            <form method="POST">
-                <input type="hidden" name="csrf_token" value="{generate_csrf()}">
-                <label>Username</label>
-                <input name="username">
-                <label>Password</label>
-                <input name="password" type="password">
-                <button type="submit">Login</button>
-            </form>
-            <p class="error">{error}</p>
-        </div>
-    </body>
-    </html>
-    """
 
 
 # ------------------------------
