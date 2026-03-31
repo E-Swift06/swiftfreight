@@ -4,7 +4,6 @@
     <title>{{ title }}</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
@@ -31,9 +30,7 @@
     </div>
 
     <div class="nav-right">
-        <div class="hamburger" onclick="toggleMenu()">
-            ☰
-        </div>
+        <div class="hamburger" onclick="toggleMenu()">☰</div>
     </div>
 </nav>
 
@@ -52,14 +49,13 @@
         <a href="/admin/shipment-update">Shipment Update</a>
         <a href="/logout">Admin Logout</a>
 
-{% elif session.get("user_logged_in") %}
-    <hr>
-    <div style="padding: 10px 0; font-weight: bold;">
-        👤 {{ session.get("user_name") }}
-    </div>
-
-    <a href="/my-shipments">My Shipments</a>
-    <a href="/user-logout">Logout</a>
+    {% elif session.get("user_logged_in") %}
+        <hr>
+        <div style="padding: 10px 0; font-weight: bold;">
+            👤 {{ session.get("user_name") }}
+        </div>
+        <a href="/my-shipments">My Shipments</a>
+        <a href="/user-logout">Logout</a>
 
     {% else %}
         <hr>
@@ -83,13 +79,32 @@
     <div class="booking-card">
         <div class="booking-card-top-line"></div>
 
-        {% with messages = get_flashed_messages() %}
-  {% if messages %}
-    <div style="margin-bottom:20px; padding:15px; border-radius:10px; background:#f8d7da; color:#842029; border:1px solid #f5c2c7;">
-      <p style="margin:0;">{{ messages[0] }}</p>
-    </div>
-  {% endif %}
-{% endwith %}
+        <!-- ✅ FIXED FLASH MESSAGE -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flash-msg"
+                   style="
+                   margin-bottom:20px;
+                   padding:15px;
+                   border-radius:10px;
+                   font-weight:bold;
+
+                   {% if category == 'success' %}
+                       background:#e6f9f0;
+                       color:#0f5132;
+                       border:1px solid #b7ebc6;
+                   {% elif category == 'error' %}
+                       background:#f8d7da;
+                       color:#842029;
+                       border:1px solid #f5c2c7;
+                   {% endif %}
+                   ">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
 
         <form method="POST" class="booking-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -175,16 +190,22 @@
 <a href="https://wa.me/{{ whatsapp if whatsapp else '' }}?text=Hello%20SwiftFreight,%20I%20want%20to%20ask%20about%20shipping." class="whatsapp-btn" target="_blank">
     💬
 </a>
+
 <script>
 function toggleMenu() {
     let menu = document.getElementById("sideMenu");
-
-    if (menu.style.right === "0px") {
-        menu.style.right = "-260px";
-    } else {
-        menu.style.right = "0px";
-    }
+    menu.style.right = (menu.style.right === "0px") ? "-260px" : "0px";
 }
+
+/* ✅ Auto-hide message */
+setTimeout(() => {
+    document.querySelectorAll(".flash-msg").forEach(el => {
+        el.style.transition = "opacity 0.5s";
+        el.style.opacity = "0";
+        setTimeout(() => el.remove(), 500);
+    });
+}, 4000);
 </script>
+
 </body>
 </html>

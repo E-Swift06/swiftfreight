@@ -356,7 +356,7 @@ def booking():
         service_type = request.form.get("service_type", "").strip()
 
         if not all([sender_name, sender_phone, recipient_name, recipient_phone, address, weight, dimensions, service_type]):
-            flash("All fields are required.")
+            flash("All fields are required.", "error")
             return redirect(url_for("booking"))
 
         try:
@@ -380,7 +380,7 @@ def booking():
             None
         )
 
-        flash(f"Booking created successfully. Your tracking number is {tracking_number}")
+        flash(f"Booking created successfully. Your tracking number is {tracking_number}", "success")
         return redirect(url_for("booking"))
 
     return render_template(
