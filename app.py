@@ -1770,6 +1770,18 @@ def restore_booking():
     </html>
     """
 
+@app.route("/reset-admin")
+def reset_admin():
+    new_password = "yournewpassword123"
+
+    with get_conn() as conn:
+        with conn.cursor() as c:
+            c.execute(
+                "UPDATE admins SET password_hash = %s WHERE username = %s",
+                (generate_password_hash(new_password), "admin")
+            )
+
+    return f"Admin password reset to: {new_password}"
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
