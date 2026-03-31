@@ -84,14 +84,12 @@
         <div class="booking-card-top-line"></div>
 
         {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <div class="flash-message">
-                    {% for message in messages %}
-                        <p>{{ message }}</p>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
+  {% if messages %}
+    <div class="alert alert-danger" style="margin-bottom:20px; padding:15px; border-radius:10px; background:#f8d7da; color:#842029; border:1px solid #f5c2c7;">
+      <p style="margin:0;">{{ messages[0] }}</p>
+    </div>
+  {% endif %}
+{% endwith %}
 
         <form method="POST" class="booking-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

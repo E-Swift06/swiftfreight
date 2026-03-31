@@ -335,26 +335,17 @@ def track():
 # ------------------------------
 @app.route("/booking", methods=["GET", "POST"])
 def booking():
-    title = read_text_file("settings.txt", "MY SHIPPING COMPANY")
-    logo = read_text_file("logo.txt", "")
-    phone = read_text_file("phone.txt", "")
-    email = read_text_file("email.txt", "support@swiftfreight.com")
-    location = read_text_file("location.txt", "Miri, Malaysia")
-    whatsapp = read_text_file("whatsapp.txt", "")
+    title = get_setting("site_title", "MY SHIPPING COMPANY")
+    logo = get_setting("logo", "")
+    phone = get_setting("phone", "")
+    email = get_setting("email", "support@swiftfreight.com")
+    location = get_setting("location", "Miri, Malaysia")
+    whatsapp = get_setting("whatsapp", "")
 
     if logo == "":
         logo = None
 
     if request.method == "POST":
-        if not session.get("user_logged_in") and not session.get("logged_in"):
-            flash("Please log in first before creating a shipment.")
-            return redirect(url_for("user_login"))
-
-    if session.get("user_logged_in"):
-        user_email = session.get("user_email", "").strip().lower()
-    else:
-        user_email = None
-
         sender_name = request.form.get("sender_name", "").strip()
         sender_phone = request.form.get("sender_phone", "").strip()
         recipient_name = request.form.get("recipient_name", "").strip()
@@ -386,10 +377,10 @@ def booking():
             dimensions,
             service_type,
             tracking_number,
-            user_email
+            None
         )
 
-        flash(f"Booking created successfully for {user_email}. Tracking Number: {tracking_number}")
+        flash(f"Booking created successfully. Your tracking number is {tracking_number}")
         return redirect(url_for("booking"))
 
     return render_template(
