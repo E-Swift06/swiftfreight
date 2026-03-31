@@ -1664,7 +1664,146 @@ def internal_server_error(e):
 @app.errorhandler(CSRFError)
 def handle_csrf_error(e):
     return render_template("csrf_error.html"), 400
+@app.route("/admin/restore-booking", methods=["GET", "POST"])
+def restore_booking():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
 
+    message = ""
+
+    if request.method == "POST":
+        sender_name = request.form.get("sender_name", "").strip()
+        sender_phone = request.form.get("sender_phone", "").strip()
+        recipient_name = request.form.get("recipient_name", "").strip()
+        recipient_phone = request.form.get("recipient_phone", "").strip()
+        address = request.form.get("address", "").strip()
+        weight = request.form.get("weight", "").strip()
+        dimensions = request.form.get("dimensions", "").strip()
+        service_type = request.form.get("service_type", "").strip()
+        tracking_number = request.form.get("tracking_number", "").strip()
+        status = request.form.get("status", "").strip() or "Shipment Created"
+        current_location = request.form.get("current_location", "").strip() or "Pending Pickup"
+        user_email = request.form.get("email", "").strip().lower()
+
+        if not all([sender_name, recipient_name, recipient_phone, address, weight, dimensions, service_type, tracking_number]):
+            message = "Please fill in all required fields."
+        else:
+            try:
+                weight_value = float(weight)
+
+                conn = sqlite3.connect("shipping.db")
+                c = conn.cursor()
+
+                c.execute("SELECT id FROM bookings WHERE tracking_number = ?", (tracking_number,))
+                existing = c.fetchone()
+
+                if existing:
+                    message = "This tracking number already exists."
+                else:
+                    c.execute("""
+                        INSERT INTO bookings (
+                            sender_name,
+                            sender_phone,
+                            recipient_name,
+                            recipient_phone,
+                            address,
+                            weight,
+                            dimensions,
+                            service_type,
+                            tracking_number,
+                            status,
+                            current_location,
+                            updated_at,
+                            email
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        sender_name,
+                        sender_phone,
+                        recipient_name,
+                        recipient_phone,
+                        address,
+                        weight_value,
+                        dimensions,
+                        service_type,
+                        tracking_number,
+                        status,
+                        current_location,
+                        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        user_email
+                    ))
+
+                    conn.commit()
+                    conn.close()
+
+                    add_tracking_log(tracking_number, status, current_location)
+                    message = "Booking restored successfully."
+
+            except ValueError:
+                message = "Weight must be a number."
+
+    return f"""
+    <html>
+    <head>
+        <title>Restore Booking</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; background: #f5f5f5; padding: 30px; }}
+            .box {{ max-width: 700px; margin: auto; background: white; padding: 25px; border-radius: 12px; }}
+            input, textarea {{ width: 100%; padding: 10px; margin-bottom: 12px; box-sizing: border-box; }}
+            button {{ background: #111; color: white; border: none; padding: 12px 18px; border-radius: 8px; }}
+            .msg {{ margin-bottom: 15px; color: green; font-weight: bold; }}
+        </style>
+    </head>
+    <body>
+        <div class="box">
+            <h2>Restore Missing Booking</h2>
+            <p><a href="/admin">Back to Admin</a></p>
+            {f'<div class="msg">{message}</div>' if message else ''}
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{generate_csrf()}">
+
+                <label>Tracking Number</label>
+                <input name="tracking_number" value="SF-BP3HTID847" required>
+
+                <label>Sender Name</label>
+                <input name="sender_name" required>
+
+                <label>Sender Phone</label>
+                <input name="sender_phone">
+
+                <label>Recipient Name</label>
+                <input name="recipient_name" required>
+
+                <label>Recipient Phone</label>
+                <input name="recipient_phone" required>
+
+                <label>Recipient Address</label>
+                <textarea name="address" required></textarea>
+
+                <label>Weight (kg)</label>
+                <input name="weight" required>
+
+                <label>Dimensions</label>
+                <input name="dimensions" placeholder="e.g. 40x30x20 cm" required>
+
+                <label>Service Type</label>
+                <input name="service_type" placeholder="Air Freight / Express / Sea Freight" required>
+
+                <label>Status</label>
+                <input name="status" value="Shipment Created">
+
+                <label>Current Location</label>
+                <input name="current_location" value="Pending Pickup">
+
+                <label>User Email (optional)</label>
+                <input name="email">
+
+                <button type="submit">Restore Booking</button>
+            </form>
+        </div>
+    </body>
+    </html>
+    """
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
